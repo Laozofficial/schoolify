@@ -22,6 +22,10 @@ import LeaveRequest from '#models/leave_request'
 import Visitor from '#models/visitor'
 import Score from '#models/score'
 import Notification from '#models/notification'
+import Exam from '#models/exam'
+import ReportApproval from '#models/report_approval'
+import StudentRiskFlag from '#models/student_risk_flag'
+import { pickupCodeFor } from '#services/pickup_code'
 
 /**
  * Single role-aware dashboard endpoint. Inspects the caller's roles at
@@ -73,10 +77,11 @@ export default class DashboardController {
         .where('school_id', schoolId)
         .whereIn('role', ['admin', 'teacher', 'non_academic_staff', 'accountant'])
         .countDistinct('user_id as total'),
+      // Real outstanding = invoice totals minus what has been paid on them.
       FeeInvoice.query()
         .where('school_id', schoolId)
         .whereIn('status', ['pending', 'partial', 'overdue'])
-        .sum('total_amount_kobo as total'),
+        .preload('payments'),
       LeaveRequest.query().where('school_id', schoolId).where('status', 'pending').count('* as total'),
       Visitor.query().where('school_id', schoolId).whereNull('checked_out_at').count('* as total'),
       currentTerm
@@ -93,10 +98,71 @@ export default class DashboardController {
 
     const activity = await this.recentActivity(schoolId)
 
+    const outstandingKobo = openInvoicesRes.reduce(
+      (t, inv) =>
+        t + Math.max(0, Number(inv.totalAmountKobo) - inv.payments.reduce((x, p) => x + Number(p.amountKobo), 0)),
+      0
+    )
+    const studentsTotal = Number(studentsCountRes[0].$extras.total)
+
+    // Current term invoices: invoiced vs collected, for a collection rate.
+    let termFees: { invoicedKobo: number; collectedKobo: number } | null = null
+    if (currentTerm) {
+      const termInvoices = await FeeInvoice.query()
+        .where('school_id', schoolId)
+        .where('term_id', currentTerm.id)
+        .whereNot('status', 'cancelled')
+        .preload('payments')
+      termFees = {
+        invoicedKobo: termInvoices.reduce((t, i) => t + Number(i.totalAmountKobo), 0),
+        collectedKobo: termInvoices.reduce(
+          (t, i) => t + i.payments.reduce((x, p) => x + Number(p.amountKobo), 0),
+          0
+        ),
+      }
+    }
+
+    // Things waiting on an admin.
+    const [examsAwaiting, examsToPublish, approvedReports, riskOpen, classes] = await Promise.all([
+      Exam.query().where('school_id', schoolId).where('status', 'submitted').count('* as total'),
+      Exam.query()
+        .where('school_id', schoolId)
+        .where('status', 'approved')
+        .whereNull('results_approved_at')
+        .whereHas('attempts', (q) => q.where('status', 'submitted'))
+        .count('* as total'),
+      currentTerm
+        ? ReportApproval.query().where('term_id', currentTerm.id).count('* as total')
+        : Promise.resolve([{ $extras: { total: 0 } }] as any),
+      StudentRiskFlag.query()
+        .where('school_id', schoolId)
+        .where('status', 'open')
+        .whereIn('level', ['high', 'medium'])
+        .count('* as total'),
+      SchoolClass.query()
+        .where('school_id', schoolId)
+        .withCount('students', (q) => q.where('is_archived', false))
+        .orderBy('name', 'asc'),
+    ])
+
     return {
-      students: Number(studentsCountRes[0].$extras.total),
+      students: studentsTotal,
       staff: Number(staffCountRes[0].$extras.total),
-      outstandingInvoicesKobo: Number(openInvoicesRes[0].$extras.total ?? 0),
+      outstandingInvoicesKobo: outstandingKobo,
+      termFees,
+      attention: {
+        examsAwaitingReview: Number(examsAwaiting[0].$extras.total),
+        examResultsToPublish: Number(examsToPublish[0].$extras.total),
+        reportsToApprove: currentTerm
+          ? Math.max(0, studentsTotal - Number(approvedReports[0].$extras.total))
+          : 0,
+        studentsNeedingAttention: Number(riskOpen[0].$extras.total),
+      },
+      enrollmentByClass: classes.map((c) => ({
+        classId: c.id,
+        name: c.name,
+        students: Number(c.$extras.students_count),
+      })),
       pendingLeaveRequests: Number(pendingLeaveRes[0].$extras.total),
       openVisitors: Number(openVisitorsRes[0].$extras.total),
       feesCollectedTermKobo: Number(feesTermRes[0].$extras.total ?? 0),
@@ -407,14 +473,17 @@ export default class DashboardController {
           )
           .first()
 
-        // outstanding fee balance
-        const outstandingRes = await FeeInvoice.query()
+        // outstanding fee balance (invoice totals minus payments made)
+        const openInvoices = await FeeInvoice.query()
           .where('school_id', schoolId)
           .where('student_id', w.id)
           .whereIn('status', ['pending', 'partial', 'overdue'])
-          .sum('total_amount_kobo as total')
-
-        const outstanding = Number(outstandingRes[0].$extras.total ?? 0)
+          .preload('payments')
+        const outstanding = openInvoices.reduce(
+          (t, inv) =>
+            t + Math.max(0, Number(inv.totalAmountKobo) - inv.payments.reduce((x, p) => x + Number(p.amountKobo), 0)),
+          0
+        )
 
         // upcoming assignments (deadline in the next 7 days)
         const upcomingRes = w.classId
@@ -428,7 +497,12 @@ export default class DashboardController {
 
         // latest-term summary: average of all their scores this term / max
         let latestTerm: { name: string; averagePct: number } | null = null
-        if (currentTerm) {
+        // Only once the school has approved this term's report: parents must
+        // not see results before the report card is released.
+        const released = currentTerm
+          ? await ReportApproval.query().where('term_id', currentTerm.id).where('student_id', w.id).first()
+          : null
+        if (currentTerm && released) {
           const scores = await Score.query()
             .where('student_id', w.id)
             .where('term_id', currentTerm.id)
@@ -454,6 +528,9 @@ export default class DashboardController {
           fullName: `${w.firstName} ${w.lastName}`,
           admissionNumber: w.admissionNumber,
           className: w.schoolClass?.name ?? null,
+          classId: w.classId,
+          photoUrl: w.photoUrl ?? null,
+          pickupCode: pickupCodeFor(schoolId, w.id),
           todayAttendance: attRow?.status ?? null,
           outstandingKobo: outstanding,
           upcomingAssignments: Number(upcomingRes[0].$extras.total),
