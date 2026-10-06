@@ -1,6 +1,7 @@
 import Notification from '#models/notification'
 import Student from '#models/student'
 import ParentStudent from '#models/parent_student'
+import { fireAutomation } from '#services/automations'
 
 interface NotifyInput {
   schoolId: number
@@ -63,6 +64,11 @@ export async function notifyInvoiceIssued(opts: {
     body: `${naira(opts.totalKobo)} has been billed.${due} Open Fees to pay.`,
     data: { invoiceId: opts.invoiceId, kind: 'fee_invoice' },
   })
+  await fireAutomation(opts.schoolId, 'invoice', {
+    studentId: opts.studentId,
+    vars: { invoice_number: opts.invoiceNumber, amount: naira(opts.totalKobo), due: due },
+    dedupeKey: `invoice:${opts.invoiceId}`,
+  })
 }
 
 /** Notify a student + their parents that exam results are now available. */
@@ -73,6 +79,10 @@ export async function notifyExamResultsApproved(opts: {
   score?: number | null
   totalMarks?: number | null
 }) {
+  await fireAutomation(opts.schoolId, 'results', {
+    studentId: opts.studentId,
+    vars: { exam_title: opts.examTitle },
+  })
   const audience = await studentAudience(opts.studentId)
   if (audience.length === 0) return
   const scoreLine =
@@ -96,6 +106,14 @@ export async function notifyPaymentRecorded(opts: {
   amountKobo: number
   balanceKobo: number
 }) {
+  await fireAutomation(opts.schoolId, 'payment', {
+    studentId: opts.studentId,
+    vars: {
+      amount: naira(opts.amountKobo),
+      invoice_number: opts.invoiceNumber,
+      balance_line: opts.balanceKobo > 0 ? `Outstanding balance: ${naira(opts.balanceKobo)}.` : 'The invoice is now fully paid.',
+    },
+  })
   const audience = await studentAudience(opts.studentId)
   if (audience.length === 0) return
   const bal =

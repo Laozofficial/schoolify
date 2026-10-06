@@ -6,6 +6,7 @@ import AttendanceRecord from '#models/attendance_record'
 import Student from '#models/student'
 import { markAttendanceValidator, ATTENDANCE_SESSIONS } from '#validators/attendance'
 import { teacherScope } from '#services/teacher_scope'
+import { fireAutomation } from '#services/automations'
 
 type Session = (typeof ATTENDANCE_SESSIONS)[number]
 
@@ -86,6 +87,17 @@ export default class AttendanceController {
       })
     }
 
+    const locked = await AttendanceDay.query()
+      .where('school_id', school.id)
+      .where('class_id', payload.classId)
+      .where('date', payload.date)
+      .where('session', payload.session)
+      .where('submitted', true)
+      .first()
+    if (locked) {
+      return response.conflict({ message: 'This session has already been submitted and is locked.' })
+    }
+
     const day = await db.transaction(async (trx) => {
       let d = await AttendanceDay.query({ client: trx })
         .where('school_id', school.id)
@@ -128,6 +140,20 @@ export default class AttendanceController {
 
       return d
     })
+
+    // Alert guardians once per student per day, only when the register is
+    // submitted (drafts can still be corrected).
+    if (payload.submit) {
+      const flagged = payload.records.filter((r) => ['absent', 'late', 'sick'].includes(r.status))
+      const when = DateTime.fromISO(payload.date).toFormat('d LLL yyyy')
+      for (const r of flagged) {
+        await fireAutomation(school.id, 'absence', {
+          studentId: r.studentId,
+          vars: { status: r.status, date: when },
+          dedupeKey: `absence:${payload.date}:${r.studentId}`,
+        })
+      }
+    }
 
     response.status(201)
     return serialize({ dayId: day.id, session: day.session, submitted: day.submitted })

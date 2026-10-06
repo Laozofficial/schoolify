@@ -62,6 +62,8 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   // Public URL used in emails
   FRONTEND_URL: Env.schema.string.optional(),
+  /** Public API origin providers call back (delivery reports). Defaults to APP_URL. */
+  PUBLIC_API_URL: Env.schema.string.optional(),
 
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: Env.schema.string.optional(),

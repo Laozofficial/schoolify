@@ -632,6 +632,41 @@ export class GradeScaleSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class IntegrationSchema extends BaseModel {
+  static $columns = ['config', 'createdAt', 'createdByUserId', 'hookToken', 'id', 'isDefault', 'kind', 'label', 'lastError', 'lastTestedAt', 'provider', 'schoolId', 'secrets', 'status', 'updatedAt'] as const
+  $columns = IntegrationSchema.$columns
+  @column()
+  declare config: any | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare createdByUserId: number | null
+  @column()
+  declare hookToken: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isDefault: boolean
+  @column()
+  declare kind: string
+  @column()
+  declare label: string | null
+  @column()
+  declare lastError: string | null
+  @column.dateTime()
+  declare lastTestedAt: DateTime | null
+  @column()
+  declare provider: string
+  @column()
+  declare schoolId: number
+  @column()
+  declare secrets: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class LeaveRequestSchema extends BaseModel {
   static $columns = ['attachmentUrl', 'createdAt', 'decidedAt', 'decidedByUserId', 'decisionNote', 'endsOn', 'id', 'kind', 'reason', 'schoolId', 'startsOn', 'status', 'updatedAt', 'userId'] as const
   $columns = LeaveRequestSchema.$columns
@@ -663,6 +698,103 @@ export class LeaveRequestSchema extends BaseModel {
   declare updatedAt: DateTime | null
   @column()
   declare userId: number
+}
+
+export class MessageCampaignSchema extends BaseModel {
+  static $columns = ['audience', 'body', 'channels', 'createdAt', 'createdByUserId', 'event', 'id', 'schoolId', 'source', 'status', 'subject', 'title', 'total', 'updatedAt'] as const
+  $columns = MessageCampaignSchema.$columns
+  @column()
+  declare audience: any | null
+  @column()
+  declare body: string
+  @column()
+  declare channels: any
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare createdByUserId: number | null
+  @column()
+  declare event: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare schoolId: number
+  @column()
+  declare source: string
+  @column()
+  declare status: string
+  @column()
+  declare subject: string | null
+  @column()
+  declare title: string
+  @column()
+  declare total: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class MessageDeliverySchema extends BaseModel {
+  static $columns = ['body', 'campaignId', 'channel', 'createdAt', 'deliveredAt', 'error', 'id', 'integrationId', 'provider', 'providerMessageId', 'recipientName', 'recipientUserId', 'schoolId', 'sentAt', 'status', 'studentId', 'subject', 'toAddress', 'updatedAt'] as const
+  $columns = MessageDeliverySchema.$columns
+  @column()
+  declare body: string
+  @column()
+  declare campaignId: number | null
+  @column()
+  declare channel: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare deliveredAt: DateTime | null
+  @column()
+  declare error: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare integrationId: number | null
+  @column()
+  declare provider: string | null
+  @column()
+  declare providerMessageId: string | null
+  @column()
+  declare recipientName: string | null
+  @column()
+  declare recipientUserId: number | null
+  @column()
+  declare schoolId: number
+  @column.dateTime()
+  declare sentAt: DateTime | null
+  @column()
+  declare status: string
+  @column()
+  declare studentId: number | null
+  @column()
+  declare subject: string | null
+  @column()
+  declare toAddress: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class MessageTemplateSchema extends BaseModel {
+  static $columns = ['body', 'channel', 'createdAt', 'id', 'name', 'schoolId', 'subject', 'updatedAt'] as const
+  $columns = MessageTemplateSchema.$columns
+  @column()
+  declare body: string
+  @column()
+  declare channel: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare name: string
+  @column()
+  declare schoolId: number
+  @column()
+  declare subject: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
 }
 
 export class NotificationDispatchSchema extends BaseModel {
@@ -846,7 +978,7 @@ export class ReportCardCommentSchema extends BaseModel {
 }
 
 export class SchoolSchema extends BaseModel {
-  static $columns = ['badgeUrl', 'createdAt', 'id', 'letterheadUrl', 'name', 'signatureUrl', 'slug', 'subdomain', 'theme', 'updatedAt'] as const
+  static $columns = ['badgeUrl', 'createdAt', 'id', 'letterheadUrl', 'name', 'settings', 'signatureUrl', 'slug', 'subdomain', 'theme', 'updatedAt'] as const
   $columns = SchoolSchema.$columns
   @column()
   declare badgeUrl: string | null
@@ -858,6 +990,8 @@ export class SchoolSchema extends BaseModel {
   declare letterheadUrl: string | null
   @column()
   declare name: string
+  @column()
+  declare settings: any | null
   @column()
   declare signatureUrl: string | null
   @column()

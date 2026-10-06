@@ -64,6 +64,11 @@ router
     router.get('whatsapp/webhook', [controllers.WhatsappWebhook, 'verify'])
     router.post('whatsapp/webhook', [controllers.WhatsappWebhook, 'receive'])
 
+    // Delivery reports from a school's own SMS/email/WhatsApp provider. The
+    // token in the path identifies the connection (no auth header).
+    router.get('hooks/messaging/:token', [controllers.MessagingHooks, 'verify'])
+    router.post('hooks/messaging/:token', [controllers.MessagingHooks, 'receive'])
+
     // School-scoped resources
     router
       .group(() => {
@@ -388,6 +393,33 @@ router
           .post('leave/:id/decide', [controllers.LeaveRequests, 'decide'])
           .use(middleware.requireRole(['super_admin', 'admin']))
         router.post('leave/:id/withdraw', [controllers.LeaveRequests, 'withdraw'])
+
+        // Connections (school-owned SMS / email / WhatsApp accounts)
+        router
+          .group(() => {
+            router.get('integrations/catalog', [controllers.Integrations, 'catalog'])
+            router.get('integrations', [controllers.Integrations, 'index'])
+            router.post('integrations', [controllers.Integrations, 'store'])
+            router.patch('integrations/:id', [controllers.Integrations, 'update'])
+            router.delete('integrations/:id', [controllers.Integrations, 'destroy'])
+            router.post('integrations/:id/test', [controllers.Integrations, 'test'])
+
+            // Messaging centre
+            router.get('messaging/overview', [controllers.Messaging, 'overview'])
+            router.post('messaging/audience-preview', [controllers.Messaging, 'audiencePreview'])
+            router.post('messaging/send', [controllers.Messaging, 'send'])
+            router.get('messaging/campaigns', [controllers.Messaging, 'campaigns'])
+            router.get('messaging/campaigns/:id', [controllers.Messaging, 'campaign'])
+            router.post('messaging/campaigns/:id/retry', [controllers.Messaging, 'retry'])
+            router.get('messaging/deliveries', [controllers.Messaging, 'deliveries'])
+            router.get('messaging/templates', [controllers.Messaging, 'templates'])
+            router.post('messaging/templates', [controllers.Messaging, 'storeTemplate'])
+            router.put('messaging/templates/:id', [controllers.Messaging, 'updateTemplate'])
+            router.delete('messaging/templates/:id', [controllers.Messaging, 'destroyTemplate'])
+            router.get('messaging/automations', [controllers.Messaging, 'automations'])
+            router.put('messaging/automations', [controllers.Messaging, 'saveAutomations'])
+          })
+          .use(middleware.requireRole(['super_admin', 'admin']))
 
         // Invitations (pending onboarding)
         router
