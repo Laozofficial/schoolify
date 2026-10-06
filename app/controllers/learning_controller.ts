@@ -348,7 +348,7 @@ export default class LearningController {
         questionType: 'mixed',
         purpose: 'practice',
       })
-      const questions: PracticeQuestion[] = generated.map((g) => ({
+      const questions: PracticeQuestion[] = generated.questions.map((g) => ({
         type: g.type,
         prompt: g.prompt,
         options: g.options,

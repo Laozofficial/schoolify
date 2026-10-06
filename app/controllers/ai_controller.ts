@@ -9,6 +9,7 @@ import AttendanceRecord from '#models/attendance_record'
 import ReportCardComment from '#models/report_card_comment'
 import { aiJson, aiModel, isAiConfigured, AiError } from '#services/ai'
 import { teacherScope, canTeachPair } from '#services/teacher_scope'
+import { loadSources } from '#services/ai_sources'
 import { computeClassResults, type ClassResultRow } from '#services/class_results'
 import { generateQuestions, noEmDash } from '#services/question_generator'
 
@@ -55,12 +56,16 @@ export default class AiController {
     const avoid: string[] = (Array.isArray(req.input('avoid')) ? req.input('avoid') : [])
       .map((p: unknown) => String(p ?? '').slice(0, 300))
       .slice(0, 100)
+    // Uploaded photos (notes, textbook pages, past papers) or PDFs.
+    const sourceUrls: string[] = (Array.isArray(req.input('sources')) ? req.input('sources') : []).map((u: unknown) => String(u ?? ''))
+    const rawMode = String(req.input('mode') ?? 'notes')
+    const mode = (['notes', 'similar', 'extract'].includes(rawMode) ? rawMode : 'notes') as 'notes' | 'similar' | 'extract'
 
     if (!classId || !subjectId) {
       return ctx.response.badRequest({ message: 'Choose a class and subject first.' })
     }
-    if (!topic && !notes) {
-      return ctx.response.badRequest({ message: 'Give a topic or paste lesson notes.' })
+    if (!topic && !notes && sourceUrls.length === 0) {
+      return ctx.response.badRequest({ message: 'Give a topic, paste lesson notes, or upload photos or a PDF.' })
     }
     if (!canTeachPair(scope, classId, subjectId)) {
       return ctx.response.forbidden({
@@ -74,10 +79,11 @@ export default class AiController {
     if (!cls || !subject) return ctx.response.notFound({ message: 'Class or subject not found' })
 
     try {
-      const questions = await generateQuestions({
+      const loaded = sourceUrls.length ? await loadSources(sourceUrls) : null
+      const { questions, readingNote } = await generateQuestions({
         schoolId: ctx.school.id,
         userId: user.id,
-        feature: 'exam_generate',
+        feature: loaded ? `exam_generate_${mode}` : 'exam_generate',
         className: cls.name,
         classLevel: cls.level,
         subjectName: subject.name,
@@ -85,11 +91,14 @@ export default class AiController {
         count,
         difficulty,
         questionType,
-        notes,
+        notes: [notes, loaded?.text].filter(Boolean).join('\n\n').slice(0, 30000),
         avoid,
         purpose: 'exam',
+        sources: loaded?.parts,
+        sourceSummary: loaded?.summary,
+        mode,
       })
-      return ctx.serialize({ questions })
+      return ctx.serialize({ questions, readingNote })
     } catch (e) {
       return this.fail(ctx, e)
     }

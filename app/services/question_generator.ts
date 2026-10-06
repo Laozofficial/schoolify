@@ -1,4 +1,5 @@
 import { aiJson, AiError } from '#services/ai'
+import type { SourcePart } from '#services/ai_sources'
 
 /**
  * Shared AI question generator, used by teachers (exam builder drafts) and
@@ -53,7 +54,16 @@ export async function generateQuestions(input: {
   avoid?: string[]
   /** 'practice' asks for a teaching-quality explanation per question. */
   purpose?: 'exam' | 'practice'
-}): Promise<GeneratedQuestion[]> {
+  /** Uploaded photos / PDFs (model input parts) and what each one is. */
+  sources?: SourcePart[]
+  sourceSummary?: string[]
+  /**
+   * How to use the uploads: 'notes' asks only about their content,
+   * 'similar' writes new questions in the style of a past paper, 'extract'
+   * copies the paper's objective questions and works out the answers.
+   */
+  mode?: 'notes' | 'similar' | 'extract'
+}): Promise<{ questions: GeneratedQuestion[]; readingNote: string | null }> {
   const typeRule =
     input.questionType === 'mcq'
       ? 'All questions must be type "mcq".'
@@ -79,6 +89,7 @@ export async function generateQuestions(input: {
       ? '- "topic" is a short sub-topic label (2 to 5 words). "explanation" teaches: 2 to 3 sentences showing how to reach the answer, written to the student.'
       : '- "topic" is a short sub-topic label (2 to 5 words). "explanation" is 1 to 2 sentences on why the answer is correct.',
     '- If lesson notes are provided, only ask about content in the notes.',
+    ...(input.sources?.length ? modeRules(input.mode ?? 'notes') : []),
     '- Plain text only: no LaTeX, Markdown or HTML. Write fractions as 3/10, powers as x^2, and use the naira sign for money.',
     '- No two options may be equal in value or meaning (for example 0.3 and 0.30, or 1/2 and 2/4).',
     'Write in clear British English. Never use em dashes.',
@@ -87,8 +98,9 @@ export async function generateQuestions(input: {
   const schema = {
     type: 'object',
     additionalProperties: false,
-    required: ['questions'],
+    required: ['questions', 'readingNote'],
     properties: {
+      readingNote: { type: 'string' },
       questions: {
         type: 'array',
         items: {
@@ -109,7 +121,20 @@ export async function generateQuestions(input: {
     },
   }
 
+  const payload = JSON.stringify({
+    class: input.className,
+    classLevel: input.classLevel,
+    subject: input.subjectName,
+    topic: input.topic || null,
+    count: input.count,
+    typeRule,
+    difficultyRule: diffRule,
+    lessonNotes: input.notes || null,
+    attachments: input.sourceSummary ?? [],
+    avoid: input.avoid ?? [],
+  })
   const out = await aiJson<{
+    readingNote: string
     questions: {
       type: 'mcq' | 'true_false'
       prompt: string
@@ -124,17 +149,7 @@ export async function generateQuestions(input: {
     userId: input.userId,
     feature: input.feature,
     system,
-    user: JSON.stringify({
-      class: input.className,
-      classLevel: input.classLevel,
-      subject: input.subjectName,
-      topic: input.topic || null,
-      count: input.count,
-      typeRule,
-      difficultyRule: diffRule,
-      lessonNotes: input.notes || null,
-      avoid: input.avoid ?? [],
-    }),
+    user: input.sources?.length ? [{ type: 'text', text: payload }, ...input.sources] : payload,
     schema,
     schemaName: 'exam_questions',
     maxTokens: 16000,
@@ -160,11 +175,51 @@ export async function generateQuestions(input: {
     if (opts.length < 2 || opts.length > 6) continue
     if (!(q.correctIndex >= 0 && q.correctIndex < opts.length)) continue
     if (new Set(opts.map((o) => o.toLowerCase())).size !== opts.length) continue
+    if (input.mode === 'extract') {
+      // Keep the paper's own option order (A to D) when copying questions.
+      questions.push({ ...base, type: 'mcq', options: opts.map(stripLetter), correctIndex: q.correctIndex })
+      continue
+    }
     const shuffled = shuffleWithAnswer(opts, q.correctIndex)
     questions.push({ ...base, type: 'mcq', options: shuffled.options, correctIndex: shuffled.correctIndex })
   }
   if (questions.length === 0) {
-    throw new AiError('The AI did not return usable questions. Please try again.', 502)
+    const why = noEmDash(String(out.readingNote ?? '').trim())
+    throw new AiError(why || 'The AI did not return usable questions. Please try again.', 502)
   }
-  return questions
+  return { questions, readingNote: noEmDash(String(out.readingNote ?? '').trim()) || null }
+}
+
+/** "A. Lagos" or "(b) Lagos" becomes "Lagos". */
+function stripLetter(o: string) {
+  return o.replace(/^\(?[a-fA-F][.):]\s+/, '').trim()
+}
+
+function modeRules(mode: 'notes' | 'similar' | 'extract'): string[] {
+  const common = [
+    'Attachments are photos, scans or PDFs provided by the teacher. They may be handwritten, skewed or low quality: read them carefully.',
+    'If part of an attachment cannot be read with confidence, do not guess at it; mention it briefly in readingNote.',
+    'If the attachments are clearly for a different subject or class than the one stated, start readingNote by saying so.',
+  ]
+  if (mode === 'extract') {
+    return [
+      ...common,
+      'The attachments are past question papers. Copy each OBJECTIVE question (multiple choice or true/false) as written, fixing only obvious spelling mistakes, in the order it appears.',
+      'Keep the paper\'s options in their original order, without the A/B/C/D letters. Work out the correct answer yourself; do not trust any answer marked on the paper without checking it.',
+      'Skip essay, theory, fill-in-the-gap and any question that needs a diagram you cannot see clearly. Return at most "count" questions.',
+      'readingNote: say how many questions were copied, how many were skipped and why, in one or two sentences.',
+    ]
+  }
+  if (mode === 'similar') {
+    return [
+      ...common,
+      'The attachments are past question papers. Write NEW questions that test the same topics, at the same level and in the same style. Never copy a question from the paper word for word.',
+      'readingNote: one sentence on which topics from the paper the new questions cover.',
+    ]
+  }
+  return [
+    ...common,
+    'The attachments are lesson notes or textbook pages. Every question must be answerable from their content alone.',
+    'readingNote: one sentence on what the notes covered, plus anything you could not read.',
+  ]
 }
