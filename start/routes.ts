@@ -394,6 +394,14 @@ router
           .use(middleware.requireRole(['super_admin', 'admin']))
         router.post('leave/:id/withdraw', [controllers.LeaveRequests, 'withdraw'])
 
+        // Spreadsheet import (dry run, then apply)
+        router
+          .get('imports/columns', [controllers.Imports, 'columns'])
+          .use(middleware.requireRole(['super_admin', 'admin']))
+        router
+          .post('imports/:kind', [controllers.Imports, 'run'])
+          .use(middleware.requireRole(['super_admin', 'admin']))
+
         // Connections (school-owned SMS / email / WhatsApp accounts)
         router
           .group(() => {
