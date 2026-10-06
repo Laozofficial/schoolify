@@ -611,6 +611,47 @@ export class FeeStructureSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class GateEventSchema extends BaseModel {
+  static $columns = ['createdAt', 'day', 'device', 'direction', 'distanceM', 'id', 'lat', 'late', 'lng', 'method', 'note', 'occurredAt', 'personType', 'recordedByUserId', 'schoolId', 'studentId', 'updatedAt', 'userId'] as const
+  $columns = GateEventSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.date()
+  declare day: DateTime
+  @column()
+  declare device: string | null
+  @column()
+  declare direction: string
+  @column()
+  declare distanceM: number | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare lat: string | null
+  @column()
+  declare late: boolean
+  @column()
+  declare lng: string | null
+  @column()
+  declare method: string
+  @column()
+  declare note: string | null
+  @column.dateTime()
+  declare occurredAt: DateTime
+  @column()
+  declare personType: string
+  @column()
+  declare recordedByUserId: number | null
+  @column()
+  declare schoolId: number
+  @column()
+  declare studentId: number | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number | null
+}
+
 export class GradeScaleSchema extends BaseModel {
   static $columns = ['createdAt', 'grade', 'id', 'minPercentage', 'orderIndex', 'remark', 'schoolId', 'updatedAt'] as const
   $columns = GradeScaleSchema.$columns

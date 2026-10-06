@@ -394,6 +394,25 @@ router
           .use(middleware.requireRole(['super_admin', 'admin']))
         router.post('leave/:id/withdraw', [controllers.LeaveRequests, 'withdraw'])
 
+        // Gate: QR / manual sign-in, staff GPS check-in, command centre
+        const GATE_DESK = ['super_admin', 'admin', 'non_academic_staff'] as const
+        router.get('gate/mine', [controllers.Gate, 'mine'])
+        router.post('gate/self-checkin', [controllers.Gate, 'selfCheckin'])
+        router
+          .group(() => {
+            router.post('gate/scan', [controllers.Gate, 'scan'])
+            router.post('gate/manual', [controllers.Gate, 'manual'])
+            router.get('gate/people', [controllers.Gate, 'people'])
+            router.get('gate/today', [controllers.Gate, 'today'])
+            router.get('gate/events', [controllers.Gate, 'events'])
+            router.get('gate/badges', [controllers.Gate, 'badges'])
+            router.get('gate/settings', [controllers.Gate, 'settings'])
+          })
+          .use(middleware.requireRole([...GATE_DESK]))
+        router
+          .put('gate/settings', [controllers.Gate, 'saveSettings'])
+          .use(middleware.requireRole(['super_admin', 'admin']))
+
         // Spreadsheet import (dry run, then apply)
         router
           .get('imports/columns', [controllers.Imports, 'columns'])
