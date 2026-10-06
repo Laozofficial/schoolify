@@ -47,6 +47,7 @@ router.use([
 export const middleware = router.named({
   requireRole: () => import('#middleware/require_role_middleware'),
   requirePermission: () => import('#middleware/require_permission_middleware'),
+  requireModule: () => import('#middleware/require_module_middleware'),
   schoolScope: () => import('#middleware/school_scope_middleware'),
   auth: () => import('#middleware/auth_middleware'),
 })

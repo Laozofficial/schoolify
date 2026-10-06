@@ -114,6 +114,7 @@ router
             router.delete('pickup/authorized/:id', [controllers.Pickup, 'destroyAuthorized'])
           })
           .use(middleware.requireRole(['super_admin', 'admin', 'non_academic_staff']))
+          .use(middleware.requireModule('pickup'))
         // Parents manage who else may collect their own children.
         router.get('portal/students/:studentId/pickups', [controllers.Pickup, 'portalList'])
         router.post('portal/students/:studentId/authorized', [controllers.Pickup, 'portalStore'])
@@ -411,8 +412,8 @@ router
 
         // Gate: QR / manual sign-in, staff GPS check-in, command centre
         const GATE_DESK = ['super_admin', 'admin', 'non_academic_staff'] as const
-        router.get('gate/mine', [controllers.Gate, 'mine'])
-        router.post('gate/self-checkin', [controllers.Gate, 'selfCheckin'])
+        router.get('gate/mine', [controllers.Gate, 'mine']).use(middleware.requireModule('gate'))
+        router.post('gate/self-checkin', [controllers.Gate, 'selfCheckin']).use(middleware.requireModule('gate'))
         router
           .group(() => {
             router.post('gate/scan', [controllers.Gate, 'scan'])
@@ -424,6 +425,7 @@ router
             router.get('gate/settings', [controllers.Gate, 'settings'])
           })
           .use(middleware.requireRole([...GATE_DESK]))
+          .use(middleware.requireModule('gate'))
         router
           .put('gate/settings', [controllers.Gate, 'saveSettings'])
           .use(middleware.requireRole(['super_admin', 'admin']))
@@ -444,6 +446,7 @@ router
             router.delete('payroll/runs/:id', [controllers.Payroll, 'destroyRun'])
           })
           .use(middleware.requireRole(['super_admin', 'admin', 'accountant']))
+          .use(middleware.requireModule('payroll'))
         router
           .group(() => {
             router.post('payroll/runs/:id/approve', [controllers.Payroll, 'approve'])
@@ -470,6 +473,7 @@ router
             router.delete('inventory/suppliers/:id', [controllers.Inventory, 'destroySupplier'])
           })
           .use(middleware.requireRole(['super_admin', 'admin', 'accountant', 'non_academic_staff']))
+          .use(middleware.requireModule('inventory'))
 
         // Finance extras: instalment plans, collections list, other income
         router
@@ -484,6 +488,18 @@ router
             router.delete('incomes/:id', [controllers.FinanceExtras, 'destroyIncome'])
           })
           .use(middleware.requireRole(['super_admin', 'admin', 'accountant']))
+
+        // Per-person timelines and module switches
+        router
+          .get('students/:id/timeline', [controllers.Timeline, 'student'])
+          .use(middleware.requirePermission(['students', 'read']))
+        router
+          .get('staff/:id/timeline', [controllers.Timeline, 'staff'])
+          .use(middleware.requireRole(['super_admin', 'admin']))
+        router.get('modules', [controllers.Timeline, 'modules'])
+        router
+          .put('modules', [controllers.Timeline, 'saveModules'])
+          .use(middleware.requireRole(['super_admin', 'admin']))
 
         // Spreadsheet import (dry run, then apply)
         router
@@ -519,6 +535,7 @@ router
             router.put('messaging/automations', [controllers.Messaging, 'saveAutomations'])
           })
           .use(middleware.requireRole(['super_admin', 'admin']))
+          .use(middleware.requireModule('messaging'))
 
         // Invitations (pending onboarding)
         router
