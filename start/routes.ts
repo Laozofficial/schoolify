@@ -428,6 +428,29 @@ router
           .put('gate/settings', [controllers.Gate, 'saveSettings'])
           .use(middleware.requireRole(['super_admin', 'admin']))
 
+        // Payroll (admins + accountants run it; staff see their own payslips)
+        router.get('payroll/mine', [controllers.Payroll, 'mine'])
+        router.get('payroll/payslips/:id', [controllers.Payroll, 'payslip'])
+        router
+          .group(() => {
+            router.get('payroll/profiles', [controllers.Payroll, 'profiles'])
+            router.put('payroll/profiles/:userId', [controllers.Payroll, 'saveProfile'])
+            router.get('payroll/runs', [controllers.Payroll, 'runs'])
+            router.post('payroll/runs', [controllers.Payroll, 'createRun'])
+            router.get('payroll/runs/:id', [controllers.Payroll, 'showRun'])
+            router.post('payroll/runs/:id/regenerate', [controllers.Payroll, 'regenerate'])
+            router.put('payroll/payslips/:id', [controllers.Payroll, 'updatePayslip'])
+            router.delete('payroll/payslips/:id', [controllers.Payroll, 'removePayslip'])
+            router.delete('payroll/runs/:id', [controllers.Payroll, 'destroyRun'])
+          })
+          .use(middleware.requireRole(['super_admin', 'admin', 'accountant']))
+        router
+          .group(() => {
+            router.post('payroll/runs/:id/approve', [controllers.Payroll, 'approve'])
+            router.post('payroll/runs/:id/paid', [controllers.Payroll, 'markPaid'])
+          })
+          .use(middleware.requireRole(['super_admin', 'admin']))
+
         // Spreadsheet import (dry run, then apply)
         router
           .get('imports/columns', [controllers.Imports, 'columns'])

@@ -957,6 +957,105 @@ export class PaymentSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class PayrollProfileSchema extends BaseModel {
+  static $columns = ['accountName', 'accountNumber', 'active', 'allowances', 'bankName', 'baseSalaryKobo', 'createdAt', 'deductions', 'id', 'pensionPercent', 'schoolId', 'taxKobo', 'updatedAt', 'userId'] as const
+  $columns = PayrollProfileSchema.$columns
+  @column()
+  declare accountName: string | null
+  @column()
+  declare accountNumber: string | null
+  @column()
+  declare active: boolean
+  @column()
+  declare allowances: any | null
+  @column()
+  declare bankName: string | null
+  @column()
+  declare baseSalaryKobo: bigint | number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare deductions: any | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare pensionPercent: string
+  @column()
+  declare schoolId: number
+  @column()
+  declare taxKobo: bigint | number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number
+}
+
+export class PayrollRunSchema extends BaseModel {
+  static $columns = ['approvedAt', 'approvedByUserId', 'createdAt', 'createdByUserId', 'deductionsKobo', 'grossKobo', 'id', 'netKobo', 'notes', 'paidAt', 'period', 'schoolId', 'status', 'updatedAt'] as const
+  $columns = PayrollRunSchema.$columns
+  @column.dateTime()
+  declare approvedAt: DateTime | null
+  @column()
+  declare approvedByUserId: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare createdByUserId: number | null
+  @column()
+  declare deductionsKobo: bigint | number
+  @column()
+  declare grossKobo: bigint | number
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare netKobo: bigint | number
+  @column()
+  declare notes: string | null
+  @column.dateTime()
+  declare paidAt: DateTime | null
+  @column()
+  declare period: string
+  @column()
+  declare schoolId: number
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class PayslipSchema extends BaseModel {
+  static $columns = ['accountName', 'accountNumber', 'bankName', 'createdAt', 'deductionsKobo', 'grossKobo', 'id', 'lines', 'netKobo', 'runId', 'schoolId', 'staffName', 'updatedAt', 'userId'] as const
+  $columns = PayslipSchema.$columns
+  @column()
+  declare accountName: string | null
+  @column()
+  declare accountNumber: string | null
+  @column()
+  declare bankName: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare deductionsKobo: bigint | number
+  @column()
+  declare grossKobo: bigint | number
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare lines: any
+  @column()
+  declare netKobo: bigint | number
+  @column()
+  declare runId: number
+  @column()
+  declare schoolId: number
+  @column()
+  declare staffName: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number
+}
+
 export class PermissionOverrideSchema extends BaseModel {
   static $columns = ['action', 'createdAt', 'effect', 'grantedByUserId', 'id', 'resource', 'schoolId', 'updatedAt', 'userId'] as const
   $columns = PermissionOverrideSchema.$columns
