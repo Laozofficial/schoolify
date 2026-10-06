@@ -77,6 +77,18 @@ export default await Env.create(new URL('../', import.meta.url), {
   PAYMENT_PUBLIC_KEY: Env.schema.string.optional(),
   PAYMENT_WEBHOOK_SECRET: Env.schema.secret.optional(),
 
+  // Schoolify's own TwelveAI Business account: school plan subscriptions,
+  // AI credit top-ups and bank account lookups. Never used for school fees.
+  TWELVEAI_BASE_URL: Env.schema.string.optional(),
+  TWELVEAI_SECRET_KEY: Env.schema.secret.optional(),
+  TWELVEAI_PUBLIC_KEY: Env.schema.string.optional(),
+  TWELVEAI_WEBHOOK_SECRET: Env.schema.secret.optional(),
+  /** When true, schools whose trial or plan has ended become read-only. */
+  BILLING_ENFORCE: Env.schema.boolean.optional(),
+  /** AI credit prices in kobo per 1,000 tokens (defaults NGN 12 in, NGN 72 out). */
+  AI_PRICE_KOBO_PER_1K_INPUT: Env.schema.number.optional(),
+  AI_PRICE_KOBO_PER_1K_OUTPUT: Env.schema.number.optional(),
+
   // AI (OpenAI). Optional so boot works without a key; AI endpoints return
   // 503 until it is set.
   OPENAI_API_KEY: Env.schema.secret.optional(),

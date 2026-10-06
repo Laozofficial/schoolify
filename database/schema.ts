@@ -8,10 +8,12 @@ import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
 export class AiCallSchema extends BaseModel {
-  static $columns = ['completionTokens', 'createdAt', 'error', 'feature', 'id', 'latencyMs', 'model', 'promptTokens', 'schoolId', 'status', 'updatedAt', 'userId'] as const
+  static $columns = ['completionTokens', 'costKobo', 'createdAt', 'error', 'feature', 'id', 'latencyMs', 'model', 'promptTokens', 'schoolId', 'status', 'updatedAt', 'userId'] as const
   $columns = AiCallSchema.$columns
   @column()
   declare completionTokens: number
+  @column()
+  declare costKobo: number
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
@@ -32,6 +34,46 @@ export class AiCallSchema extends BaseModel {
   declare status: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+  @column()
+  declare userId: number | null
+}
+
+export class AiCreditAccountSchema extends BaseModel {
+  static $columns = ['balanceKobo', 'createdAt', 'schoolId', 'updatedAt'] as const
+  $columns = AiCreditAccountSchema.$columns
+  @column()
+  declare balanceKobo: bigint | number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare schoolId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class AiCreditTransactionSchema extends BaseModel {
+  static $columns = ['aiCallId', 'amountKobo', 'balanceAfterKobo', 'createdAt', 'feature', 'id', 'kind', 'note', 'reference', 'schoolId', 'userId'] as const
+  $columns = AiCreditTransactionSchema.$columns
+  @column()
+  declare aiCallId: number | null
+  @column()
+  declare amountKobo: bigint | number
+  @column()
+  declare balanceAfterKobo: bigint | number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare feature: string | null
+  @column({ isPrimary: true })
+  declare id: bigint | number
+  @column()
+  declare kind: string
+  @column()
+  declare note: string | null
+  @column()
+  declare reference: string | null
+  @column()
+  declare schoolId: number
   @column()
   declare userId: number | null
 }
@@ -319,6 +361,37 @@ export class BankAccountSchema extends BaseModel {
   declare schoolId: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+}
+
+export class BillingPaymentSchema extends BaseModel {
+  static $columns = ['amountKobo', 'checkoutUrl', 'createdAt', 'id', 'kind', 'lastCheckedAt', 'mode', 'paidAt', 'reference', 'schoolId', 'status', 'updatedAt', 'userId'] as const
+  $columns = BillingPaymentSchema.$columns
+  @column()
+  declare amountKobo: bigint | number
+  @column()
+  declare checkoutUrl: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare kind: string
+  @column.dateTime()
+  declare lastCheckedAt: DateTime | null
+  @column()
+  declare mode: string
+  @column.dateTime()
+  declare paidAt: DateTime | null
+  @column()
+  declare reference: string
+  @column()
+  declare schoolId: number
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number | null
 }
 
 export class CalendarEventSchema extends BaseModel {
@@ -1301,8 +1374,53 @@ export class ReportCardCommentSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class SchoolSubscriptionSchema extends BaseModel {
+  static $columns = ['amountKobo', 'cancelAtPeriodEnd', 'cardBrand', 'cardLast4', 'checkoutUrl', 'createdAt', 'createdByUserId', 'currentPeriodEnd', 'gatewayId', 'gatewayReference', 'id', 'intervalKey', 'lastFailureReason', 'lastSyncedAt', 'mode', 'nextChargeAt', 'planKey', 'schoolId', 'status', 'updatedAt'] as const
+  $columns = SchoolSubscriptionSchema.$columns
+  @column()
+  declare amountKobo: bigint | number
+  @column()
+  declare cancelAtPeriodEnd: boolean
+  @column()
+  declare cardBrand: string | null
+  @column()
+  declare cardLast4: string | null
+  @column()
+  declare checkoutUrl: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare createdByUserId: number | null
+  @column.dateTime()
+  declare currentPeriodEnd: DateTime | null
+  @column()
+  declare gatewayId: string | null
+  @column()
+  declare gatewayReference: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare intervalKey: string
+  @column()
+  declare lastFailureReason: string | null
+  @column.dateTime()
+  declare lastSyncedAt: DateTime | null
+  @column()
+  declare mode: string
+  @column.dateTime()
+  declare nextChargeAt: DateTime | null
+  @column()
+  declare planKey: string
+  @column()
+  declare schoolId: number
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class SchoolSchema extends BaseModel {
-  static $columns = ['badgeUrl', 'createdAt', 'id', 'letterheadUrl', 'name', 'settings', 'signatureUrl', 'slug', 'subdomain', 'theme', 'updatedAt'] as const
+  static $columns = ['badgeUrl', 'createdAt', 'id', 'letterheadUrl', 'name', 'settings', 'signatureUrl', 'slug', 'subdomain', 'theme', 'trialEndsAt', 'updatedAt'] as const
   $columns = SchoolSchema.$columns
   @column()
   declare badgeUrl: string | null
@@ -1324,6 +1442,8 @@ export class SchoolSchema extends BaseModel {
   declare subdomain: string | null
   @column()
   declare theme: any | null
+  @column.dateTime()
+  declare trialEndsAt: DateTime | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }

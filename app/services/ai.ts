@@ -1,6 +1,7 @@
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
 import AiCall from '#models/ai_call'
+import { creditsBlockMessage, chargeUsage } from '#services/ai_credits'
 
 /**
  * Thin OpenAI client for the portal's AI features. Every call:
@@ -89,6 +90,8 @@ interface AiJsonInput {
 export async function aiJson<T>(input: AiJsonInput): Promise<T> {
   const key = env.get('OPENAI_API_KEY')?.release()
   if (!key) throw new AiError('AI is not configured on this server yet.', 503)
+  const blocked = await creditsBlockMessage(input.schoolId)
+  if (blocked) throw new AiError(blocked, 402)
 
   const model = aiModel()
   const effort = input.effort ?? env.get('OPENAI_REASONING_EFFORT') ?? 'medium'
@@ -156,8 +159,9 @@ async function log(
   status: 'ok' | 'error',
   error: string | null
 ) {
+  let callId: number | null = null
   try {
-    await AiCall.create({
+    const row = await AiCall.create({
       schoolId: input.schoolId,
       userId: input.userId,
       feature: input.feature,
@@ -168,9 +172,12 @@ async function log(
       status,
       error,
     })
+    callId = row.id
   } catch {
     // Logging must never break the feature.
   }
+  // Tokens are billed whether or not the answer was usable: the AI did the work.
+  await chargeUsage({ schoolId: input.schoolId, userId: input.userId, feature: input.feature, aiCallId: callId, promptTokens, completionTokens })
 }
 
 /* -------------------------------------------------------------------------- */
@@ -213,6 +220,8 @@ export async function aiChatWithTools(
 ): Promise<{ text: string; toolsUsed: string[] }> {
   const key = env.get('OPENAI_API_KEY')?.release()
   if (!key) throw new AiError('AI is not configured on this server yet.', 503)
+  const blocked = await creditsBlockMessage(input.schoolId)
+  if (blocked) throw new AiError(blocked, 402)
   const model = aiModel()
   const messages: ChatMessage[] = [...input.messages]
   const toolsUsed: string[] = []

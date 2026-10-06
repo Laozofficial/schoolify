@@ -49,5 +49,6 @@ export const middleware = router.named({
   requirePermission: () => import('#middleware/require_permission_middleware'),
   requireModule: () => import('#middleware/require_module_middleware'),
   schoolScope: () => import('#middleware/school_scope_middleware'),
+  requireActivePlan: () => import('#middleware/require_active_plan_middleware'),
   auth: () => import('#middleware/auth_middleware'),
 })

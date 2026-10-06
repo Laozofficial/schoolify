@@ -8,6 +8,7 @@ import RiskScanJob from '#jobs/risk_scan_job'
 import SendCampaignJob from '#jobs/send_campaign_job'
 import InstallmentReminderJob from '#jobs/installment_reminder_job'
 import DeliverWebhookJob from '#jobs/deliver_webhook_job'
+import BillingSweepJob from '#jobs/billing_sweep_job'
 
 type JobCtor = (new () => BaseJob<any>) & { queueName: string; jobName: string }
 
@@ -21,6 +22,7 @@ export const jobs: JobCtor[] = [
   SendCampaignJob,
   InstallmentReminderJob,
   DeliverWebhookJob,
+  BillingSweepJob,
 ]
 
 export function jobsByQueue(): Record<string, JobCtor[]> {

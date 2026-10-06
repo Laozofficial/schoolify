@@ -7,6 +7,7 @@ import { redisConnection, knownQueueNames } from '#services/queue'
 import PeriodReminderJob from '#jobs/period_reminder_job'
 import RiskScanJob from '#jobs/risk_scan_job'
 import InstallmentReminderJob from '#jobs/installment_reminder_job'
+import BillingSweepJob from '#jobs/billing_sweep_job'
 
 export default class Worker extends BaseCommand {
   static commandName = 'worker'
@@ -80,6 +81,17 @@ export default class Worker extends BaseCommand {
       }
     )
     logger.info('instalment reminders scheduled (daily 08:00 Africa/Lagos)')
+
+    // Plan renewals and AI credit top-ups: every five minutes.
+    await reminderQueue.add(
+      BillingSweepJob.jobName,
+      {},
+      {
+        repeat: { pattern: '*/5 * * * *' },
+        jobId: BillingSweepJob.repeatKey,
+      }
+    )
+    logger.info('billing sweep scheduled (every 5 minutes)')
 
     const shutdown = async () => {
       logger.info('worker shutdown signal received')

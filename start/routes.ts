@@ -57,6 +57,9 @@ router
     // Uploads (any authed user; tenant-agnostic)
     router.post('uploads', [controllers.Uploads, 'store']).use(middleware.auth())
 
+    // Schoolify's own TwelveAI account (plans, AI credit). Signed, no auth.
+    router.post('billing/webhook', [controllers.Billing, 'webhook'])
+
     // Payment gateway webhook (public - secured by HMAC signature, not auth).
     router.post('payments/webhook', [controllers.PaymentsWebhook, 'handle'])
 
@@ -493,6 +496,25 @@ router
           })
           .use(middleware.requireRole(['super_admin', 'admin', 'accountant']))
 
+        // Schoolify plan and AI credit (admins only)
+        router
+          .group(() => {
+            router.get('billing', [controllers.Billing, 'overview'])
+            router.post('billing/subscribe', [controllers.Billing, 'subscribe'])
+            router.post('billing/subscriptions/:id/refresh', [controllers.Billing, 'refresh'])
+            router.post('billing/subscriptions/:id/cancel', [controllers.Billing, 'cancel'])
+            router.post('billing/ai-credits/topup', [controllers.Billing, 'topup'])
+            router.post('billing/ai-credits/topups/:reference/confirm', [controllers.Billing, 'confirmTopup'])
+          })
+          .use(middleware.requireRole(['super_admin', 'admin']))
+        // Bank list and account name lookup (payroll, bank accounts)
+        router
+          .group(() => {
+            router.get('banks', [controllers.Billing, 'banks'])
+            router.get('banks/resolve', [controllers.Billing, 'resolve'])
+          })
+          .use(middleware.requireRole(['super_admin', 'admin', 'accountant']))
+
         // Per-person timelines and module switches
         router
           .get('students/:id/timeline', [controllers.Timeline, 'student'])
@@ -759,6 +781,6 @@ router
       })
       .prefix('schools/:schoolId')
       .as('school')
-      .use([middleware.auth(), middleware.schoolScope()])
+      .use([middleware.auth(), middleware.schoolScope(), middleware.requireActivePlan()])
   })
   .prefix('/api/v1')

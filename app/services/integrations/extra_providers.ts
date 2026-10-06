@@ -234,8 +234,65 @@ export const flutterwave: PaymentAdapter = {
   },
 }
 
+const TWELVEAI_API = 'https://api.twelveai.app/api/business/v1'
+
+export const twelveai: PaymentAdapter = {
+  def: {
+    key: 'twelveai',
+    kind: 'payments',
+    name: 'TwelveAI Business',
+    blurb: "Collect fees online into the school's own TwelveAI Business account: cards, bank transfer and USSD.",
+    website: 'https://business.twelveai.app',
+    deliveryReports: true,
+    webhookNote: 'In TwelveAI Business, open Developers, Webhooks. Paste this URL, generate a signing secret and paste that secret here.',
+    fields: [
+      { key: 'secretKey', label: 'Secret key', secret: true, required: true, placeholder: 'tw_live_...' },
+      { key: 'webhookSecret', label: 'Webhook signing secret', secret: true, required: true, placeholder: 'whsec_...' },
+    ],
+  },
+  async test({ secrets }) {
+    const key = req(secrets.secretKey, 'Secret key')
+    await http(`${TWELVEAI_API}/balance`, { label: 'TwelveAI Business', headers: { Authorization: `Bearer ${key}` } })
+    return /^(tw|sk)_test_/.test(key) ? 'Connected in TEST mode. No real money will move.' : 'Connected. Online fee payments go to your TwelveAI Business account.'
+  },
+  async initialize({ secrets }, p) {
+    const json = await http(`${TWELVEAI_API}/payments/initialize`, {
+      label: 'TwelveAI Business',
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${req(secrets.secretKey, 'Secret key')}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: p.email, amount: p.amountKobo, reference: p.reference, callback_url: p.callbackUrl, metadata: p.metadata }),
+    })
+    return { authorizationUrl: json?.data?.checkout_url ?? json?.data?.authorization_url }
+  },
+  verifyWebhook({ secrets }, raw, headers) {
+    const sig = headers['x-twelveai-signature'] ?? ''
+    const key = String(secrets.webhookSecret ?? '')
+    if (!sig || !key) return false
+    const ts = Number(headers['x-twelveai-timestamp'] ?? 0)
+    if (ts && Math.abs(Date.now() / 1000 - ts) > 300) return false
+    const expected = createHmac('sha512', key).update(raw).digest('hex')
+    try {
+      return sig.length === expected.length && timingSafeEqual(Buffer.from(sig), Buffer.from(expected))
+    } catch {
+      return false
+    }
+  },
+  successReference(body) {
+    return body?.event === 'charge.success' && body?.data?.reference ? String(body.data.reference) : null
+  },
+  async verify({ secrets }, reference) {
+    const json = await http(`${TWELVEAI_API}/payments/verify/${encodeURIComponent(reference)}`, {
+      label: 'TwelveAI Business',
+      headers: { Authorization: `Bearer ${req(secrets.secretKey, 'Secret key')}` },
+    })
+    const st = String(json?.data?.status ?? '').toLowerCase()
+    // Gross paid; recordOnlinePayment never applies more than the invoice owes, so a fee passed to the parent cannot over-credit it.
+    return { success: st === 'successful' || st === 'success', amountKobo: Math.round(Number(json?.data?.amount ?? 0)) }
+  },
+}
+
 export const MEETING_PROVIDERS: MeetingAdapter[] = [zoom]
-export const PAYMENT_PROVIDERS: PaymentAdapter[] = [paystack, flutterwave]
+export const PAYMENT_PROVIDERS: PaymentAdapter[] = [paystack, flutterwave, twelveai]
 
 export function extraFor(key: string): MeetingAdapter | PaymentAdapter | undefined {
   return [...MEETING_PROVIDERS, ...PAYMENT_PROVIDERS].find((p) => p.def.key === key)
