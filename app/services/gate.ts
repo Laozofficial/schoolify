@@ -7,6 +7,7 @@ import Student from '#models/student'
 import User from '#models/user'
 import UserSchoolRole from '#models/user_school_role'
 import { fireAutomation } from '#services/automations'
+import { emitEvent } from '#services/events'
 
 /**
  * Gate sign-in/out. ID cards carry a signed code (school, person, card
@@ -169,6 +170,15 @@ export async function recordGateEvent(input: RecordInput): Promise<RecordResult>
     note: input.note?.slice(0, 300) ?? null,
   })
 
+  await emitEvent(input.school.id, direction === 'in' ? 'gate.in' : 'gate.out', {
+    personType: input.person.type,
+    studentId: input.person.studentId,
+    userId: input.person.userId,
+    name: input.person.name,
+    late,
+    method: input.method,
+    at: now.toISO(),
+  })
   if (input.person.studentId) {
     await fireAutomation(input.school.id, direction === 'in' ? 'gate_arrival' : 'gate_departure', {
       studentId: input.person.studentId,

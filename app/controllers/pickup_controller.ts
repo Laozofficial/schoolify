@@ -8,6 +8,7 @@ import PickupLog from '#models/pickup_log'
 import { parsePickupQr, verifyPickupCode } from '#services/pickup_code'
 import { familyAccess } from '#services/family_access'
 import { fireAutomation } from '#services/automations'
+import { emitEvent } from '#services/events'
 import { notifyUsers, studentAudience } from '#services/notify'
 import { TZ } from '#services/gate'
 
@@ -173,6 +174,14 @@ export default class PickupController {
         data: { kind: 'pickup', studentId: student.id },
       })
       await fireAutomation(school.id, 'pickup', { studentId: student.id, vars: { time, collector: by } })
+      await emitEvent(school.id, 'pickup.released', {
+        studentId: student.id,
+        studentName: name,
+        collector: collectorName,
+        collectorType: p.collector?.type ?? null,
+        method,
+        at: now.toISO(),
+      })
     }
 
     return serialize({

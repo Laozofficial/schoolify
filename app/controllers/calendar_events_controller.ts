@@ -89,6 +89,7 @@ export default class CalendarEventsController {
       endsOn: row.endsOn?.toISODate() ?? null,
       allDay: row.allDay,
       color: row.color,
+      meetingUrl: row.meetingUrl ?? null,
     }
   }
 }

@@ -13,6 +13,8 @@ import { pickupCodeFor, pickupQrFor, verifyPickupCode } from '#services/pickup_c
 import InvoiceInstallment from '#models/invoice_installment'
 import { scheduleState } from '#services/installments'
 import { initializePayment, isPaymentConfigured } from '#services/payment_gateway'
+import { activeIntegration, providerCtx } from '#services/integrations/store'
+import { paymentFor } from '#services/integrations/extra_providers'
 import env from '#start/env'
 
 /**
@@ -300,7 +302,10 @@ export default class PortalController {
     const studentId = Number(ctx.params.studentId)
     const student = await this.guard(ctx, studentId)
     if (!student) return
-    if (!isPaymentConfigured()) {
+    // A school's own Paystack/Flutterwave connection takes priority over the
+    // platform gateway.
+    const ownGateway = await activeIntegration(ctx.school.id, 'payments')
+    if (!ownGateway && !isPaymentConfigured()) {
       return ctx.response.serviceUnavailable({
         message: 'Online payments are not enabled yet. Please pay at the school office.',
       })
@@ -323,6 +328,23 @@ export default class PortalController {
     const user = ctx.auth.getUserOrFail()
     const reference = `sch${ctx.school.id}-inv${invoice.id}-${Date.now()}`
     const frontend = env.get('FRONTEND_URL') ?? 'http://localhost:3000'
+
+    if (ownGateway) {
+      const adapter = paymentFor(ownGateway.provider)
+      if (!adapter) return ctx.response.serviceUnavailable({ message: 'Online payments are not available right now.' })
+      try {
+        const res = await adapter.initialize(providerCtx(ownGateway, ctx.school), {
+          amountKobo: outstanding,
+          email: user.email.endsWith('.local') ? `noreply+${user.id}@schoolify.twelveai.app` : user.email,
+          reference,
+          callbackUrl: `${frontend}/portal?paid=${invoice.id}`,
+          metadata: { invoiceId: invoice.id, studentId, schoolId: ctx.school.id },
+        })
+        return ctx.serialize({ authorizationUrl: res.authorizationUrl, reference, amountKobo: outstanding })
+      } catch (e) {
+        return ctx.response.badGateway({ message: (e as Error).message ?? 'Could not start payment' })
+      }
+    }
 
     try {
       const res = await initializePayment({

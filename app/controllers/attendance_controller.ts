@@ -7,6 +7,7 @@ import Student from '#models/student'
 import { markAttendanceValidator, ATTENDANCE_SESSIONS } from '#validators/attendance'
 import { teacherScope } from '#services/teacher_scope'
 import { fireAutomation } from '#services/automations'
+import { emitEvent } from '#services/events'
 
 type Session = (typeof ATTENDANCE_SESSIONS)[number]
 
@@ -147,6 +148,13 @@ export default class AttendanceController {
       const flagged = payload.records.filter((r) => ['absent', 'late', 'sick'].includes(r.status))
       const when = DateTime.fromISO(payload.date).toFormat('d LLL yyyy')
       for (const r of flagged) {
+        await emitEvent(school.id, 'attendance.absent', {
+          studentId: r.studentId,
+          classId: payload.classId,
+          date: payload.date,
+          session: payload.session,
+          status: r.status,
+        })
         await fireAutomation(school.id, 'absence', {
           studentId: r.studentId,
           vars: { status: r.status, date: when },

@@ -7,6 +7,7 @@ import WhatsappInboundJob from '#jobs/whatsapp_inbound_job'
 import RiskScanJob from '#jobs/risk_scan_job'
 import SendCampaignJob from '#jobs/send_campaign_job'
 import InstallmentReminderJob from '#jobs/installment_reminder_job'
+import DeliverWebhookJob from '#jobs/deliver_webhook_job'
 
 type JobCtor = (new () => BaseJob<any>) & { queueName: string; jobName: string }
 
@@ -19,6 +20,7 @@ export const jobs: JobCtor[] = [
   RiskScanJob,
   SendCampaignJob,
   InstallmentReminderJob,
+  DeliverWebhookJob,
 ]
 
 export function jobsByQueue(): Record<string, JobCtor[]> {

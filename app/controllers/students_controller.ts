@@ -5,6 +5,7 @@ import ParentStudent from '#models/parent_student'
 import UserSchoolRole from '#models/user_school_role'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
+import { emitEvent } from '#services/events'
 import SchoolClass from '#models/school_class'
 import { createStudentValidator, updateStudentValidator } from '#validators/student'
 import { provisionUserWithRoles } from '#services/user_provisioning'
@@ -144,6 +145,14 @@ export default class StudentsController {
 
     await student.load('schoolClass')
     await student.load('parents')
+    await emitEvent(school.id, 'student.created', {
+      studentId: student.id,
+      admissionNumber: student.admissionNumber,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      className: student.schoolClass?.name ?? null,
+      source: 'manual',
+    })
     response.status(201)
     return serialize(this.serialize(student))
   }

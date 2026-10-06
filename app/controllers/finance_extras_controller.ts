@@ -6,6 +6,7 @@ import FeeInvoice from '#models/fee_invoice'
 import InvoiceInstallment from '#models/invoice_installment'
 import Income from '#models/income'
 import { scheduleState, splitEven } from '#services/installments'
+import { emitEvent } from '#services/events'
 
 const n = (v: unknown) => Math.round(Number(v ?? 0)) || 0
 const DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -228,6 +229,14 @@ export default class FinanceExtrasController {
   async storeIncome({ school, auth, request, response, serialize }: HttpContext) {
     const p = await request.validateUsing(incomeValidator)
     const row = await Income.create({ schoolId: school.id, ...this.incomeFields(p), recordedByUserId: auth.user?.id ?? null })
+    await emitEvent(school.id, 'income.recorded', {
+      incomeId: row.id,
+      category: p.category,
+      description: p.description,
+      payer: p.payer ?? null,
+      amountKobo: Math.round(p.amountKobo),
+      receivedOn: p.receivedOn,
+    })
     response.status(201)
     return serialize({ id: row.id })
   }

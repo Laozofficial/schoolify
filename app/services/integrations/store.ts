@@ -4,6 +4,7 @@ import env from '#start/env'
 import Integration from '#models/integration'
 import type School from '#models/school'
 import { providerFor, type Kind, type ProviderCtx } from '#services/integrations/providers'
+import { extraFor, type ExtraKind } from '#services/integrations/extra_providers'
 
 /** Secrets are kept as one encrypted JSON blob per integration. */
 export function encryptSecrets(secrets: Record<string, string>): string {
@@ -31,7 +32,13 @@ export function publicApiBase(): string {
 }
 
 export function hookUrlFor(row: Integration): string {
-  return `${publicApiBase()}/api/v1/hooks/messaging/${row.hookToken}`
+  const path = row.kind === 'payments' ? 'payments' : 'messaging'
+  return `${publicApiBase()}/api/v1/hooks/${path}/${row.hookToken}`
+}
+
+/** Definition + credential check for any connection type. */
+export function anyProvider(key: string) {
+  return providerFor(key) ?? extraFor(key)
 }
 
 export function providerCtx(row: Integration, school: Pick<School, 'name'>): ProviderCtx {
@@ -44,14 +51,14 @@ export function providerCtx(row: Integration, school: Pick<School, 'name'>): Pro
 }
 
 /** The connection a channel sends through: the default one, else any live one. */
-export async function activeIntegration(schoolId: number, kind: Kind): Promise<Integration | null> {
+export async function activeIntegration(schoolId: number, kind: Kind | ExtraKind): Promise<Integration | null> {
   const rows = await Integration.query()
     .where('school_id', schoolId)
     .where('kind', kind)
     .whereNot('status', 'disabled')
     .orderBy('is_default', 'desc')
     .orderBy('id', 'asc')
-  return rows.find((r) => providerFor(r.provider)) ?? null
+  return rows.find((r) => anyProvider(r.provider)) ?? null
 }
 
 /** Mask a stored secret for display: last 4 characters only. */

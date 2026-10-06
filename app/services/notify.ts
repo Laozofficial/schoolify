@@ -2,6 +2,7 @@ import Notification from '#models/notification'
 import Student from '#models/student'
 import ParentStudent from '#models/parent_student'
 import { fireAutomation } from '#services/automations'
+import { emitEvent } from '#services/events'
 
 interface NotifyInput {
   schoolId: number
@@ -64,6 +65,13 @@ export async function notifyInvoiceIssued(opts: {
     body: `${naira(opts.totalKobo)} has been billed.${due} Open Fees to pay.`,
     data: { invoiceId: opts.invoiceId, kind: 'fee_invoice' },
   })
+  await emitEvent(opts.schoolId, 'invoice.created', {
+    invoiceId: opts.invoiceId,
+    invoiceNumber: opts.invoiceNumber,
+    studentId: opts.studentId,
+    totalKobo: opts.totalKobo,
+    dueOn: opts.dueOn ?? null,
+  })
   await fireAutomation(opts.schoolId, 'invoice', {
     studentId: opts.studentId,
     vars: { invoice_number: opts.invoiceNumber, amount: naira(opts.totalKobo), due: due },
@@ -79,6 +87,12 @@ export async function notifyExamResultsApproved(opts: {
   score?: number | null
   totalMarks?: number | null
 }) {
+  await emitEvent(opts.schoolId, 'exam.results_published', {
+    studentId: opts.studentId,
+    examTitle: opts.examTitle,
+    score: opts.score ?? null,
+    totalMarks: opts.totalMarks ?? null,
+  })
   await fireAutomation(opts.schoolId, 'results', {
     studentId: opts.studentId,
     vars: { exam_title: opts.examTitle },
@@ -106,6 +120,12 @@ export async function notifyPaymentRecorded(opts: {
   amountKobo: number
   balanceKobo: number
 }) {
+  await emitEvent(opts.schoolId, 'payment.received', {
+    invoiceNumber: opts.invoiceNumber,
+    studentId: opts.studentId,
+    amountKobo: opts.amountKobo,
+    balanceKobo: opts.balanceKobo,
+  })
   await fireAutomation(opts.schoolId, 'payment', {
     studentId: opts.studentId,
     vars: {

@@ -2,7 +2,9 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import Integration from '#models/integration'
 import { PROVIDERS, providerFor } from '#services/integrations/providers'
+import { MEETING_PROVIDERS, PAYMENT_PROVIDERS } from '#services/integrations/extra_providers'
 import {
+  anyProvider,
   decryptSecrets,
   encryptSecrets,
   hookUrlFor,
@@ -22,7 +24,7 @@ import {
  */
 export default class IntegrationsController {
   async catalog({ serialize }: HttpContext) {
-    return serialize(PROVIDERS.map((p) => p.def))
+    return serialize([...PROVIDERS, ...MEETING_PROVIDERS, ...PAYMENT_PROVIDERS].map((p) => p.def))
   }
 
   async index({ school, serialize }: HttpContext) {
@@ -32,7 +34,7 @@ export default class IntegrationsController {
 
   async store({ school, auth, request, response, serialize }: HttpContext) {
     const payload = await request.validateUsing(createIntegrationValidator)
-    const adapter = providerFor(payload.provider)
+    const adapter = anyProvider(payload.provider)
     if (!adapter) return response.badRequest({ message: 'Unknown provider' })
 
     const { config, secrets, missing } = this.split(adapter.def.fields, payload.values, {})
@@ -64,7 +66,7 @@ export default class IntegrationsController {
   async update({ school, params, request, response, serialize }: HttpContext) {
     const row = await this.find(school.id, params.id)
     if (!row) return response.notFound({ message: 'Connection not found' })
-    const adapter = providerFor(row.provider)
+    const adapter = anyProvider(row.provider)
     if (!adapter) return response.badRequest({ message: 'Unknown provider' })
     const payload = await request.validateUsing(updateIntegrationValidator)
 
@@ -110,8 +112,9 @@ export default class IntegrationsController {
     const { to } = await request.validateUsing(testIntegrationValidator)
     const result = await this.runTest(row, school)
     let sent: string | null = null
-    if (result.ok && to) {
-      const adapter = providerFor(row.provider)!
+    const messenger = providerFor(row.provider)
+    if (result.ok && to && messenger) {
+      const adapter = messenger
       try {
         await adapter.send(providerCtx(row, school), {
           to,
@@ -130,7 +133,7 @@ export default class IntegrationsController {
   }
 
   private async runTest(row: Integration, school: { name: string }) {
-    const adapter = providerFor(row.provider)
+    const adapter = anyProvider(row.provider)
     if (!adapter) return { ok: false, message: 'Unknown provider' }
     try {
       const message = await adapter.test(providerCtx(row, school))
@@ -183,7 +186,7 @@ export default class IntegrationsController {
   }
 
   private serialize(row: Integration) {
-    const adapter = providerFor(row.provider)
+    const adapter = anyProvider(row.provider)
     const secrets = decryptSecrets(row.secrets)
     const secretHints: Record<string, string | null> = {}
     for (const f of adapter?.def.fields ?? []) if (f.secret) secretHints[f.key] = maskSecret(secrets[f.key])

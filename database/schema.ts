@@ -322,7 +322,7 @@ export class BankAccountSchema extends BaseModel {
 }
 
 export class CalendarEventSchema extends BaseModel {
-  static $columns = ['allDay', 'color', 'createdAt', 'description', 'endsOn', 'eventType', 'id', 'schoolId', 'startsOn', 'title', 'updatedAt'] as const
+  static $columns = ['allDay', 'color', 'createdAt', 'description', 'endsOn', 'eventType', 'id', 'meetingProvider', 'meetingUrl', 'schoolId', 'startsOn', 'title', 'updatedAt'] as const
   $columns = CalendarEventSchema.$columns
   @column()
   declare allDay: boolean
@@ -338,6 +338,10 @@ export class CalendarEventSchema extends BaseModel {
   declare eventType: string
   @column({ isPrimary: true })
   declare id: number
+  @column()
+  declare meetingProvider: string | null
+  @column()
+  declare meetingUrl: string | null
   @column()
   declare schoolId: number
   @column.date()
@@ -1702,6 +1706,62 @@ export class VisitorSchema extends BaseModel {
   declare schoolId: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+}
+
+export class WebhookDeliverySchema extends BaseModel {
+  static $columns = ['attempts', 'createdAt', 'deliveredAt', 'endpointId', 'event', 'eventId', 'id', 'lastError', 'payload', 'responseCode', 'schoolId', 'status', 'updatedAt'] as const
+  $columns = WebhookDeliverySchema.$columns
+  @column()
+  declare attempts: number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare deliveredAt: DateTime | null
+  @column()
+  declare endpointId: number
+  @column()
+  declare event: string
+  @column()
+  declare eventId: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare lastError: string | null
+  @column()
+  declare payload: any
+  @column()
+  declare responseCode: number | null
+  @column()
+  declare schoolId: number
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class WebhookEndpointSchema extends BaseModel {
+  static $columns = ['active', 'createdAt', 'createdByUserId', 'description', 'events', 'id', 'schoolId', 'secret', 'updatedAt', 'url'] as const
+  $columns = WebhookEndpointSchema.$columns
+  @column()
+  declare active: boolean
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare createdByUserId: number | null
+  @column()
+  declare description: string | null
+  @column()
+  declare events: any
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare schoolId: number
+  @column()
+  declare secret: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare url: string
 }
 
 export class WhatsappLinkSchema extends BaseModel {

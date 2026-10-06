@@ -68,6 +68,10 @@ router
     // token in the path identifies the connection (no auth header).
     router.get('hooks/messaging/:token', [controllers.MessagingHooks, 'verify'])
     router.post('hooks/messaging/:token', [controllers.MessagingHooks, 'receive'])
+    // School-owned Paystack / Flutterwave account webhooks.
+    router.post('hooks/payments/:token', [controllers.PaymentsHooks, 'receive'])
+    // Public calendar subscription (Google Calendar, Outlook, Apple).
+    router.get('calendar-feed/:token', [controllers.ConnectionsExtras, 'ics'])
 
     // School-scoped resources
     router
@@ -520,22 +524,40 @@ router
             router.post('integrations/:id/test', [controllers.Integrations, 'test'])
 
             // Messaging centre
-            router.get('messaging/overview', [controllers.Messaging, 'overview'])
-            router.post('messaging/audience-preview', [controllers.Messaging, 'audiencePreview'])
-            router.post('messaging/send', [controllers.Messaging, 'send'])
-            router.get('messaging/campaigns', [controllers.Messaging, 'campaigns'])
-            router.get('messaging/campaigns/:id', [controllers.Messaging, 'campaign'])
-            router.post('messaging/campaigns/:id/retry', [controllers.Messaging, 'retry'])
-            router.get('messaging/deliveries', [controllers.Messaging, 'deliveries'])
-            router.get('messaging/templates', [controllers.Messaging, 'templates'])
-            router.post('messaging/templates', [controllers.Messaging, 'storeTemplate'])
-            router.put('messaging/templates/:id', [controllers.Messaging, 'updateTemplate'])
-            router.delete('messaging/templates/:id', [controllers.Messaging, 'destroyTemplate'])
-            router.get('messaging/automations', [controllers.Messaging, 'automations'])
-            router.put('messaging/automations', [controllers.Messaging, 'saveAutomations'])
+            router.get('messaging/overview', [controllers.Messaging, 'overview']).use(middleware.requireModule('messaging'))
+            router.post('messaging/audience-preview', [controllers.Messaging, 'audiencePreview']).use(middleware.requireModule('messaging'))
+            router.post('messaging/send', [controllers.Messaging, 'send']).use(middleware.requireModule('messaging'))
+            router.get('messaging/campaigns', [controllers.Messaging, 'campaigns']).use(middleware.requireModule('messaging'))
+            router.get('messaging/campaigns/:id', [controllers.Messaging, 'campaign']).use(middleware.requireModule('messaging'))
+            router.post('messaging/campaigns/:id/retry', [controllers.Messaging, 'retry']).use(middleware.requireModule('messaging'))
+            router.get('messaging/deliveries', [controllers.Messaging, 'deliveries']).use(middleware.requireModule('messaging'))
+            router.get('messaging/templates', [controllers.Messaging, 'templates']).use(middleware.requireModule('messaging'))
+            router.post('messaging/templates', [controllers.Messaging, 'storeTemplate']).use(middleware.requireModule('messaging'))
+            router.put('messaging/templates/:id', [controllers.Messaging, 'updateTemplate']).use(middleware.requireModule('messaging'))
+            router.delete('messaging/templates/:id', [controllers.Messaging, 'destroyTemplate']).use(middleware.requireModule('messaging'))
+            router.get('messaging/automations', [controllers.Messaging, 'automations']).use(middleware.requireModule('messaging'))
+            router.put('messaging/automations', [controllers.Messaging, 'saveAutomations']).use(middleware.requireModule('messaging'))
           })
           .use(middleware.requireRole(['super_admin', 'admin']))
-          .use(middleware.requireModule('messaging'))
+
+        // Outbound webhooks, calendar feed, meetings (admin)
+        router
+          .group(() => {
+            router.get('webhooks/event-types', [controllers.ConnectionsExtras, 'eventTypes'])
+            router.get('webhooks', [controllers.ConnectionsExtras, 'endpoints'])
+            router.post('webhooks', [controllers.ConnectionsExtras, 'storeEndpoint'])
+            router.put('webhooks/:id', [controllers.ConnectionsExtras, 'updateEndpoint'])
+            router.delete('webhooks/:id', [controllers.ConnectionsExtras, 'destroyEndpoint'])
+            router.post('webhooks/:id/test', [controllers.ConnectionsExtras, 'testEndpoint'])
+            router.post('webhooks/:id/rotate-secret', [controllers.ConnectionsExtras, 'rotateSecret'])
+            router.get('webhooks/:id/deliveries', [controllers.ConnectionsExtras, 'deliveries'])
+            router.post('webhook-deliveries/:id/redeliver', [controllers.ConnectionsExtras, 'redeliver'])
+            router.get('calendar-feed', [controllers.ConnectionsExtras, 'feed'])
+            router.post('calendar-feed/rotate', [controllers.ConnectionsExtras, 'rotateFeed'])
+            router.post('calendar/:id/meeting', [controllers.ConnectionsExtras, 'createMeeting'])
+            router.delete('calendar/:id/meeting', [controllers.ConnectionsExtras, 'removeMeeting'])
+          })
+          .use(middleware.requireRole(['super_admin', 'admin']))
 
         // Invitations (pending onboarding)
         router

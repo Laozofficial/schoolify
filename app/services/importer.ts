@@ -9,6 +9,7 @@ import ParentStudent from '#models/parent_student'
 import { provisionUserWithRoles } from '#services/user_provisioning'
 import { normalizePhone } from '#services/whatsapp'
 import { dispatch } from '#services/queue'
+import { emitEvent } from '#services/events'
 import SendInviteJob from '#jobs/send_invite_job'
 
 /**
@@ -325,6 +326,13 @@ async function importStudents(school: School, rows: Row[], opts: ImportOptions):
         })
         student = await Student.create({ schoolId: school.id, userId: user.id, admissionNumber: adm, ...fields })
         byAdm.set(adm.toLowerCase(), student.id)
+        await emitEvent(school.id, 'student.created', {
+          studentId: student.id,
+          admissionNumber: adm,
+          firstName: first,
+          lastName: last,
+          source: 'import',
+        })
       }
 
       if (pEmail || pPhone) {

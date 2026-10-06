@@ -7,6 +7,7 @@ import PayrollRun from '#models/payroll_run'
 import Payslip from '#models/payslip'
 import { linesForProfile, n, totals } from '#services/payroll'
 import { notifyUsers } from '#services/notify'
+import { emitEvent } from '#services/events'
 import { STAFF_ROLES } from '#services/gate'
 
 const item = vine.object({ name: vine.string().trim().minLength(1).maxLength(80), amountKobo: vine.number().min(0).max(1e12) })
@@ -178,6 +179,13 @@ export default class PayrollController {
     if (!slips.length) return response.unprocessableEntity({ message: 'There are no payslips in this payroll.' })
     run.merge({ status: 'approved', approvedByUserId: auth.user?.id ?? null, approvedAt: DateTime.now() })
     await run.save()
+    await emitEvent(school.id, 'payroll.approved', {
+      runId: run.id,
+      period: run.period,
+      staffCount: slips.length,
+      grossKobo: n(run.grossKobo),
+      netKobo: n(run.netKobo),
+    })
     for (const s of slips) {
       await notifyUsers([s.userId], {
         schoolId: school.id,
