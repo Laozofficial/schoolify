@@ -33,3 +33,16 @@ export function verifyPickupCode(
   const given = String(code ?? '').trim()
   return given.length === expected.length && given === expected
 }
+
+/**
+ * QR shown in the parent portal: carries the student and today's code, so a
+ * gate scan fills both in one go. It is only valid today, like the code.
+ */
+export function pickupQrFor(schoolId: number, studentId: number): string {
+  return `SFYP.${schoolId}.${studentId}.${pickupCodeFor(schoolId, studentId)}`
+}
+
+export function parsePickupQr(raw: string): { schoolId: number; studentId: number; code: string } | null {
+  const m = /^SFYP\.(\d+)\.(\d+)\.(\d{6})$/.exec(String(raw ?? '').trim())
+  return m ? { schoolId: Number(m[1]), studentId: Number(m[2]), code: m[3] } : null
+}

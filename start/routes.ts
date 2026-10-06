@@ -103,6 +103,21 @@ router
         router
           .post('pickup/verify', [controllers.Portal, 'verifyPickup'])
           .use(middleware.requireRole(['super_admin', 'admin', 'non_academic_staff']))
+        router
+          .group(() => {
+            router.post('pickup/release', [controllers.Pickup, 'release'])
+            router.get('pickup/logs', [controllers.Pickup, 'logs'])
+            router.get('pickup/students/:studentId/collectors', [controllers.Pickup, 'collectors'])
+            router.get('pickup/students/:studentId/authorized', [controllers.Pickup, 'listAuthorized'])
+            router.post('pickup/students/:studentId/authorized', [controllers.Pickup, 'storeAuthorized'])
+            router.put('pickup/authorized/:id', [controllers.Pickup, 'updateAuthorized'])
+            router.delete('pickup/authorized/:id', [controllers.Pickup, 'destroyAuthorized'])
+          })
+          .use(middleware.requireRole(['super_admin', 'admin', 'non_academic_staff']))
+        // Parents manage who else may collect their own children.
+        router.get('portal/students/:studentId/pickups', [controllers.Pickup, 'portalList'])
+        router.post('portal/students/:studentId/authorized', [controllers.Pickup, 'portalStore'])
+        router.delete('portal/authorized/:id', [controllers.Pickup, 'portalDestroy'])
 
         // Permissions (RBAC)
         router.get('account/permissions', [controllers.Permissions, 'mine'])

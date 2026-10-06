@@ -9,7 +9,7 @@ import Assignment from '#models/assignment'
 import AssignmentSubmission from '#models/assignment_submission'
 import ExamAttempt from '#models/exam_attempt'
 import Term from '#models/term'
-import { pickupCodeFor, verifyPickupCode } from '#services/pickup_code'
+import { pickupCodeFor, pickupQrFor, verifyPickupCode } from '#services/pickup_code'
 import { initializePayment, isPaymentConfigured } from '#services/payment_gateway'
 import env from '#start/env'
 
@@ -90,6 +90,7 @@ export default class PortalController {
         // Only parents get a pickup code (they collect the child). Rotates
         // daily; the gate verifies it before releasing the student.
         pickupCode: isParent ? pickupCodeFor(school.id, s.id) : null,
+        pickupQr: isParent ? pickupQrFor(school.id, s.id) : null,
       }))
     )
   }

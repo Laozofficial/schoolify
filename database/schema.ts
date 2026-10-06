@@ -265,6 +265,35 @@ export class AuthAccessTokenSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class AuthorizedPickupSchema extends BaseModel {
+  static $columns = ['active', 'addedByUserId', 'createdAt', 'fullName', 'id', 'phone', 'photoUrl', 'relationship', 'schoolId', 'studentId', 'updatedAt', 'validUntil'] as const
+  $columns = AuthorizedPickupSchema.$columns
+  @column()
+  declare active: boolean
+  @column()
+  declare addedByUserId: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare fullName: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare phone: string | null
+  @column()
+  declare photoUrl: string | null
+  @column()
+  declare relationship: string | null
+  @column()
+  declare schoolId: number
+  @column()
+  declare studentId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column.date()
+  declare validUntil: DateTime | null
+}
+
 export class BankAccountSchema extends BaseModel {
   static $columns = ['accountNumber', 'accountType', 'bankName', 'createdAt', 'id', 'isActive', 'name', 'notes', 'openingBalanceKobo', 'schoolId', 'updatedAt'] as const
   $columns = BankAccountSchema.$columns
@@ -949,6 +978,41 @@ export class PermissionOverrideSchema extends BaseModel {
   declare updatedAt: DateTime | null
   @column()
   declare userId: number
+}
+
+export class PickupLogSchema extends BaseModel {
+  static $columns = ['authorizedPickupId', 'collectorName', 'collectorType', 'collectorUserId', 'createdAt', 'day', 'id', 'method', 'note', 'occurredAt', 'outcome', 'recordedByUserId', 'schoolId', 'studentId', 'updatedAt'] as const
+  $columns = PickupLogSchema.$columns
+  @column()
+  declare authorizedPickupId: number | null
+  @column()
+  declare collectorName: string | null
+  @column()
+  declare collectorType: string | null
+  @column()
+  declare collectorUserId: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.date()
+  declare day: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare method: string
+  @column()
+  declare note: string | null
+  @column.dateTime()
+  declare occurredAt: DateTime
+  @column()
+  declare outcome: string
+  @column()
+  declare recordedByUserId: number | null
+  @column()
+  declare schoolId: number
+  @column()
+  declare studentId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
 }
 
 export class PracticeSetSchema extends BaseModel {
