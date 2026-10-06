@@ -451,6 +451,26 @@ router
           })
           .use(middleware.requireRole(['super_admin', 'admin']))
 
+        // Inventory (store keepers are non-academic staff)
+        router
+          .group(() => {
+            router.get('inventory/summary', [controllers.Inventory, 'summary'])
+            router.get('inventory/items', [controllers.Inventory, 'items'])
+            router.post('inventory/items', [controllers.Inventory, 'storeItem'])
+            router.put('inventory/items/:id', [controllers.Inventory, 'updateItem'])
+            router.delete('inventory/items/:id', [controllers.Inventory, 'destroyItem'])
+            router.post('inventory/items/:id/issue', [controllers.Inventory, 'issue'])
+            router.post('inventory/items/:id/count', [controllers.Inventory, 'count'])
+            router.get('inventory/movements', [controllers.Inventory, 'movements'])
+            router.get('inventory/purchases', [controllers.Inventory, 'purchases'])
+            router.post('inventory/purchases', [controllers.Inventory, 'storePurchase'])
+            router.get('inventory/suppliers', [controllers.Inventory, 'suppliers'])
+            router.post('inventory/suppliers', [controllers.Inventory, 'storeSupplier'])
+            router.put('inventory/suppliers/:id', [controllers.Inventory, 'updateSupplier'])
+            router.delete('inventory/suppliers/:id', [controllers.Inventory, 'destroySupplier'])
+          })
+          .use(middleware.requireRole(['super_admin', 'admin', 'accountant', 'non_academic_staff']))
+
         // Spreadsheet import (dry run, then apply)
         router
           .get('imports/columns', [controllers.Imports, 'columns'])

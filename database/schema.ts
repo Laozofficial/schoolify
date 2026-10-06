@@ -737,6 +737,39 @@ export class IntegrationSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class InventoryItemSchema extends BaseModel {
+  static $columns = ['active', 'category', 'createdAt', 'id', 'name', 'notes', 'quantity', 'reorderLevel', 'schoolId', 'sku', 'store', 'unit', 'unitCostKobo', 'updatedAt'] as const
+  $columns = InventoryItemSchema.$columns
+  @column()
+  declare active: boolean
+  @column()
+  declare category: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare name: string
+  @column()
+  declare notes: string | null
+  @column()
+  declare quantity: number
+  @column()
+  declare reorderLevel: number
+  @column()
+  declare schoolId: number
+  @column()
+  declare sku: string | null
+  @column()
+  declare store: string | null
+  @column()
+  declare unit: string
+  @column()
+  declare unitCostKobo: bigint | number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class LeaveRequestSchema extends BaseModel {
   static $columns = ['attachmentUrl', 'createdAt', 'decidedAt', 'decidedByUserId', 'decisionNote', 'endsOn', 'id', 'kind', 'reason', 'schoolId', 'startsOn', 'status', 'updatedAt', 'userId'] as const
   $columns = LeaveRequestSchema.$columns
@@ -1143,6 +1176,33 @@ export class PracticeSetSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class PurchaseSchema extends BaseModel {
+  static $columns = ['createdAt', 'expenseId', 'id', 'note', 'purchasedOn', 'recordedByUserId', 'reference', 'schoolId', 'supplierId', 'totalKobo', 'updatedAt'] as const
+  $columns = PurchaseSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare expenseId: number | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare note: string | null
+  @column.date()
+  declare purchasedOn: DateTime
+  @column()
+  declare recordedByUserId: number | null
+  @column()
+  declare reference: string | null
+  @column()
+  declare schoolId: number
+  @column()
+  declare supplierId: number | null
+  @column()
+  declare totalKobo: bigint | number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class ReportApprovalSchema extends BaseModel {
   static $columns = ['approvedAt', 'approvedByUserId', 'createdAt', 'id', 'studentId', 'termId', 'updatedAt'] as const
   $columns = ReportApprovalSchema.$columns
@@ -1227,6 +1287,39 @@ export class ScoreSchema extends BaseModel {
   declare subjectId: number
   @column()
   declare termId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class StockMovementSchema extends BaseModel {
+  static $columns = ['balanceAfter', 'createdAt', 'id', 'issuedTo', 'itemId', 'note', 'occurredAt', 'purchaseId', 'quantity', 'recordedByUserId', 'schoolId', 'type', 'unitCostKobo', 'updatedAt'] as const
+  $columns = StockMovementSchema.$columns
+  @column()
+  declare balanceAfter: number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare issuedTo: string | null
+  @column()
+  declare itemId: number
+  @column()
+  declare note: string | null
+  @column.dateTime()
+  declare occurredAt: DateTime
+  @column()
+  declare purchaseId: number | null
+  @column()
+  declare quantity: number
+  @column()
+  declare recordedByUserId: number | null
+  @column()
+  declare schoolId: number
+  @column()
+  declare type: string
+  @column()
+  declare unitCostKobo: bigint | number | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }
@@ -1338,6 +1431,31 @@ export class SubjectSchema extends BaseModel {
   declare id: number
   @column()
   declare name: string
+  @column()
+  declare schoolId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class SupplierSchema extends BaseModel {
+  static $columns = ['address', 'contactName', 'createdAt', 'email', 'id', 'name', 'notes', 'phone', 'schoolId', 'updatedAt'] as const
+  $columns = SupplierSchema.$columns
+  @column()
+  declare address: string | null
+  @column()
+  declare contactName: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare email: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare name: string
+  @column()
+  declare notes: string | null
+  @column()
+  declare phone: string | null
   @column()
   declare schoolId: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })

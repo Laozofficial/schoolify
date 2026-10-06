@@ -145,7 +145,7 @@ export default class MessagingController {
 
   async templates({ school, serialize }: HttpContext) {
     const rows = await MessageTemplate.query().where('school_id', school.id).orderBy('name')
-    return serialize(rows)
+    return serialize(rows.map((r) => r.serialize()))
   }
 
   async storeTemplate({ school, request, response, serialize }: HttpContext) {
@@ -158,7 +158,7 @@ export default class MessagingController {
       body: p.body,
     })
     response.status(201)
-    return serialize(row)
+    return serialize(row.serialize())
   }
 
   async updateTemplate({ school, params, request, response, serialize }: HttpContext) {
@@ -167,7 +167,7 @@ export default class MessagingController {
     const p = await request.validateUsing(templateValidator)
     row.merge({ name: p.name, channel: p.channel ?? row.channel, subject: p.subject ?? null, body: p.body })
     await row.save()
-    return serialize(row)
+    return serialize(row.serialize())
   }
 
   async destroyTemplate({ school, params, response }: HttpContext) {
