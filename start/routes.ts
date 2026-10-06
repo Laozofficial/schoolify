@@ -471,6 +471,20 @@ router
           })
           .use(middleware.requireRole(['super_admin', 'admin', 'accountant', 'non_academic_staff']))
 
+        // Finance extras: instalment plans, collections list, other income
+        router
+          .group(() => {
+            router.get('invoices/:id/installments', [controllers.FinanceExtras, 'plan'])
+            router.put('invoices/:id/installments', [controllers.FinanceExtras, 'savePlan'])
+            router.post('installments/split', [controllers.FinanceExtras, 'split'])
+            router.get('installments/upcoming', [controllers.FinanceExtras, 'upcoming'])
+            router.get('incomes', [controllers.FinanceExtras, 'incomes'])
+            router.post('incomes', [controllers.FinanceExtras, 'storeIncome'])
+            router.put('incomes/:id', [controllers.FinanceExtras, 'updateIncome'])
+            router.delete('incomes/:id', [controllers.FinanceExtras, 'destroyIncome'])
+          })
+          .use(middleware.requireRole(['super_admin', 'admin', 'accountant']))
+
         // Spreadsheet import (dry run, then apply)
         router
           .get('imports/columns', [controllers.Imports, 'columns'])

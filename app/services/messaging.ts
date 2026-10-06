@@ -190,6 +190,8 @@ export async function createCampaign(input: CreateCampaignInput): Promise<Messag
   }
 
   const recipients = await resolveAudience(input.schoolId, input.audience)
+  // An automatic alert with nobody to tell (no linked guardian) is not worth a record.
+  if (recipients.length === 0 && input.source === 'automation') return null
   const channels = [...new Set(input.channels)].filter((c) => CHANNELS.includes(c))
 
   const integrations: Partial<Record<Kind, Integration | null>> = {}

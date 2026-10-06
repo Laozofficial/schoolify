@@ -1,4 +1,5 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
 import Student from '#models/student'
 import SchoolClass from '#models/school_class'
 import Expense from '#models/expense'
@@ -143,6 +144,8 @@ export default class ReportsController {
 
     const expenses = await Expense.query().where('school_id', school.id)
     const expensesKobo = expenses.reduce((s, e) => s + Number(e.amountKobo), 0)
+    const [incomeRow] = await db.from('incomes').where('school_id', school.id).sum('amount_kobo as t')
+    const otherIncomeKobo = Number((incomeRow as any)?.t ?? 0)
 
     // group expenses by category
     const expensesByCategory = new Map<string, number>()
@@ -198,7 +201,8 @@ export default class ReportsController {
         collectedKobo: collected,
         outstandingKobo: outstanding,
         expensesKobo,
-        netKobo: collected - expensesKobo,
+        otherIncomeKobo,
+        netKobo: collected + otherIncomeKobo - expensesKobo,
       },
       expensesByCategory: [...expensesByCategory.entries()].map(([category, amountKobo]) => ({
         category,

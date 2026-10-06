@@ -49,6 +49,15 @@ export const AUTOMATION_EVENTS: AutomationEvent[] = [
     tokens: ['amount', 'invoice_number', 'balance_line'],
   },
   {
+    key: 'installment',
+    label: 'Instalment reminder',
+    description: 'Three days before an instalment is due, and the day after it is missed.',
+    subject: 'Fee instalment for {{student_name}}',
+    body: 'Dear {{first_name}}, {{label}} of {{amount}} for {{student_name}} is {{when}}. You can pay in the parent portal. {{school_name}}',
+    channels: ['sms', 'whatsapp', 'email', 'in_app'],
+    tokens: ['label', 'amount', 'when', 'due_date'],
+  },
+  {
     key: 'results',
     label: 'Exam results published',
     description: 'When a CBT exam result is released to families.',

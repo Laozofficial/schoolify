@@ -702,6 +702,39 @@ export class GradeScaleSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class IncomeSchema extends BaseModel {
+  static $columns = ['amountKobo', 'bankAccountId', 'category', 'createdAt', 'description', 'id', 'method', 'notes', 'payer', 'receivedOn', 'recordedByUserId', 'reference', 'schoolId', 'updatedAt'] as const
+  $columns = IncomeSchema.$columns
+  @column()
+  declare amountKobo: bigint | number
+  @column()
+  declare bankAccountId: number | null
+  @column()
+  declare category: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare description: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare method: string | null
+  @column()
+  declare notes: string | null
+  @column()
+  declare payer: string | null
+  @column.date()
+  declare receivedOn: DateTime
+  @column()
+  declare recordedByUserId: number | null
+  @column()
+  declare reference: string | null
+  @column()
+  declare schoolId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class IntegrationSchema extends BaseModel {
   static $columns = ['config', 'createdAt', 'createdByUserId', 'hookToken', 'id', 'isDefault', 'kind', 'label', 'lastError', 'lastTestedAt', 'provider', 'schoolId', 'secrets', 'status', 'updatedAt'] as const
   $columns = IntegrationSchema.$columns
@@ -766,6 +799,29 @@ export class InventoryItemSchema extends BaseModel {
   declare unit: string
   @column()
   declare unitCostKobo: bigint | number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class InvoiceInstallmentSchema extends BaseModel {
+  static $columns = ['amountKobo', 'createdAt', 'dueOn', 'id', 'invoiceId', 'label', 'position', 'schoolId', 'updatedAt'] as const
+  $columns = InvoiceInstallmentSchema.$columns
+  @column()
+  declare amountKobo: bigint | number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.date()
+  declare dueOn: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare invoiceId: number
+  @column()
+  declare label: string | null
+  @column()
+  declare position: number
+  @column()
+  declare schoolId: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }

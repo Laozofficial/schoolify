@@ -10,6 +10,8 @@ import AssignmentSubmission from '#models/assignment_submission'
 import ExamAttempt from '#models/exam_attempt'
 import Term from '#models/term'
 import { pickupCodeFor, pickupQrFor, verifyPickupCode } from '#services/pickup_code'
+import InvoiceInstallment from '#models/invoice_installment'
+import { scheduleState } from '#services/installments'
 import { initializePayment, isPaymentConfigured } from '#services/payment_gateway'
 import env from '#start/env'
 
@@ -146,6 +148,8 @@ export default class PortalController {
       )
     }
 
+    const plans = invoiceIds.length ? await InvoiceInstallment.query().whereIn('invoice_id', invoiceIds) : []
+
     let outstanding = 0
     const rows = invoices.map((inv) => {
       const total = Number(inv.totalAmountKobo)
@@ -162,6 +166,10 @@ export default class PortalController {
         status: inv.status,
         issuedOn: inv.issuedOn,
         dueOn: inv.dueOn,
+        installments: scheduleState(
+          plans.filter((p) => p.invoiceId === inv.id),
+          paid
+        ),
       }
     })
 
