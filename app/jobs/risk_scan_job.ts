@@ -1,5 +1,6 @@
 import logger from '@adonisjs/core/services/logger'
 import { BaseJob } from '#jobs/base_job'
+import { automationsPaused } from '#services/pause'
 import School from '#models/school'
 import SchoolClass from '#models/school_class'
 import User from '#models/user'
@@ -18,6 +19,7 @@ export default class RiskScanJob extends BaseJob<{ schoolId?: number }> {
   static repeatKey = 'risk-scan-weekly'
 
   async handle(payload: { schoolId?: number }) {
+    if (automationsPaused()) return
     const schools = payload?.schoolId ? await School.query().where('id', payload.schoolId) : await School.all()
     for (const school of schools) {
       try {

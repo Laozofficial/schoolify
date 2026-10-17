@@ -1,3 +1,4 @@
+import { automationsPaused, PAUSED_MESSAGE } from '#services/pause'
 import type { HttpContext } from '@adonisjs/core/http'
 import db from '@adonisjs/lucid/services/db'
 import MessageCampaign from '#models/message_campaign'
@@ -82,6 +83,7 @@ export default class MessagingController {
   }
 
   async send({ school, auth, request, response, serialize }: HttpContext) {
+    if (automationsPaused()) return response.serviceUnavailable({ message: PAUSED_MESSAGE })
     const payload = await request.validateUsing(sendCampaignValidator)
     const campaign = await createCampaign({
       schoolId: school.id,
@@ -115,6 +117,7 @@ export default class MessagingController {
 
   /** Re-queue failed deliveries of a campaign. */
   async retry({ school, params, response, serialize }: HttpContext) {
+    if (automationsPaused()) return response.serviceUnavailable({ message: PAUSED_MESSAGE })
     const row = await MessageCampaign.query().where('school_id', school.id).where('id', params.id).first()
     if (!row) return response.notFound({ message: 'Message not found' })
     const n = await MessageDelivery.query()

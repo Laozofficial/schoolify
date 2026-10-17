@@ -85,6 +85,8 @@ export default await Env.create(new URL('../', import.meta.url), {
   TWELVEAI_WEBHOOK_SECRET: Env.schema.secret.optional(),
   /** When true, schools whose trial or plan has ended become read-only. */
   BILLING_ENFORCE: Env.schema.boolean.optional(),
+  /** When true, scheduled jobs and automatic or bulk messages stop (see services/pause.ts). */
+  AUTOMATIONS_PAUSED: Env.schema.boolean.optional(),
   /** AI credit prices in kobo per 1,000 tokens (defaults NGN 12 in, NGN 72 out). */
   AI_PRICE_KOBO_PER_1K_INPUT: Env.schema.number.optional(),
   AI_PRICE_KOBO_PER_1K_OUTPUT: Env.schema.number.optional(),

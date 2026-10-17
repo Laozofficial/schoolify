@@ -8,6 +8,7 @@ import PeriodReminderJob from '#jobs/period_reminder_job'
 import RiskScanJob from '#jobs/risk_scan_job'
 import InstallmentReminderJob from '#jobs/installment_reminder_job'
 import BillingSweepJob from '#jobs/billing_sweep_job'
+import { automationsPaused, PAUSED_JOB_NAMES } from '#services/pause'
 
 export default class Worker extends BaseCommand {
   static commandName = 'worker'
@@ -47,51 +48,78 @@ export default class Worker extends BaseCommand {
       workers.push(worker)
     }
 
-    // Register the every-minute period-reminder heartbeat. Idempotent -
-    // repeatable jobs are keyed by `jobId` so restarts don't duplicate.
     const reminderQueue = new BullQueue(PeriodReminderJob.queueName, { connection })
-    await reminderQueue.add(
-      PeriodReminderJob.jobName,
-      {},
-      {
-        repeat: { pattern: '* * * * *' }, // every minute
-        jobId: PeriodReminderJob.repeatKey,
-      }
-    )
-    logger.info('period-reminder heartbeat scheduled (every minute)')
 
-    // Weekly early warning scan + digests: Mondays 07:00 Lagos time.
-    await reminderQueue.add(
-      RiskScanJob.jobName,
-      {},
-      {
-        repeat: { pattern: '0 7 * * 1', tz: 'Africa/Lagos' },
-        jobId: RiskScanJob.repeatKey,
+    // Paused: take every schedule out of Redis and drop paused jobs that
+    // were queued before the pause, so nothing fires later. The job
+    // handlers refuse to run as well, in case anything slips through.
+    if (automationsPaused()) {
+      for (const queueName of knownQueueNames()) {
+        const q = new BullQueue(queueName, { connection })
+        for (const r of await q.getRepeatableJobs()) await q.removeRepeatableByKey(r.key)
+        const waiting = await q.getJobs(['waiting', 'delayed', 'prioritized', 'paused'])
+        let dropped = 0
+        for (const j of waiting) {
+          if (PAUSED_JOB_NAMES.has(j.name)) {
+            await j.remove()
+            dropped++
+          }
+        }
+        logger.warn(
+          { queue: queueName, dropped },
+          'AUTOMATIONS_PAUSED: schedules removed, paused jobs dropped'
+        )
+        await q.close()
       }
-    )
-    logger.info('risk-scan scheduled (Mondays 07:00 Africa/Lagos)')
+      logger.warn(
+        'AUTOMATIONS_PAUSED is on: no scheduled jobs and no automatic or bulk messages will run'
+      )
+    } else {
+      // Register the every-minute period-reminder heartbeat. Idempotent -
+      // repeatable jobs are keyed by `jobId` so restarts don't duplicate.
+      await reminderQueue.add(
+        PeriodReminderJob.jobName,
+        {},
+        {
+          repeat: { pattern: '* * * * *' }, // every minute
+          jobId: PeriodReminderJob.repeatKey,
+        }
+      )
+      logger.info('period-reminder heartbeat scheduled (every minute)')
 
-    // Fee instalment reminders: every day 08:00 Lagos time.
-    await reminderQueue.add(
-      InstallmentReminderJob.jobName,
-      {},
-      {
-        repeat: { pattern: '0 8 * * *', tz: 'Africa/Lagos' },
-        jobId: InstallmentReminderJob.repeatKey,
-      }
-    )
-    logger.info('instalment reminders scheduled (daily 08:00 Africa/Lagos)')
+      // Weekly early warning scan + digests: Mondays 07:00 Lagos time.
+      await reminderQueue.add(
+        RiskScanJob.jobName,
+        {},
+        {
+          repeat: { pattern: '0 7 * * 1', tz: 'Africa/Lagos' },
+          jobId: RiskScanJob.repeatKey,
+        }
+      )
+      logger.info('risk-scan scheduled (Mondays 07:00 Africa/Lagos)')
 
-    // Plan renewals and AI credit top-ups: every five minutes.
-    await reminderQueue.add(
-      BillingSweepJob.jobName,
-      {},
-      {
-        repeat: { pattern: '*/5 * * * *' },
-        jobId: BillingSweepJob.repeatKey,
-      }
-    )
-    logger.info('billing sweep scheduled (every 5 minutes)')
+      // Fee instalment reminders: every day 08:00 Lagos time.
+      await reminderQueue.add(
+        InstallmentReminderJob.jobName,
+        {},
+        {
+          repeat: { pattern: '0 8 * * *', tz: 'Africa/Lagos' },
+          jobId: InstallmentReminderJob.repeatKey,
+        }
+      )
+      logger.info('instalment reminders scheduled (daily 08:00 Africa/Lagos)')
+
+      // Plan renewals and AI credit top-ups: every five minutes.
+      await reminderQueue.add(
+        BillingSweepJob.jobName,
+        {},
+        {
+          repeat: { pattern: '*/5 * * * *' },
+          jobId: BillingSweepJob.repeatKey,
+        }
+      )
+      logger.info('billing sweep scheduled (every 5 minutes)')
+    }
 
     const shutdown = async () => {
       logger.info('worker shutdown signal received')

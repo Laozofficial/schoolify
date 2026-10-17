@@ -1,4 +1,5 @@
 import { BaseJob, type JobPayload } from '#jobs/base_job'
+import { automationsPaused } from '#services/pause'
 import { DateTime } from 'luxon'
 import db from '@adonisjs/lucid/services/db'
 import mail from '@adonisjs/mail/services/main'
@@ -28,6 +29,7 @@ export default class PeriodReminderJob extends BaseJob<JobPayload> {
   static repeatKey = 'period-reminder-heartbeat'
 
   async handle() {
+    if (automationsPaused()) return
     const now = DateTime.now().setZone('Africa/Lagos')
     const dayOfWeek = now.weekday // 1..7
     const today = now.toFormat('yyyy-LL-dd')

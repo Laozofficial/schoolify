@@ -1,4 +1,5 @@
 import { BaseJob, type JobPayload } from '#jobs/base_job'
+import { automationsPaused } from '#services/pause'
 import mail from '@adonisjs/mail/services/main'
 import env from '#start/env'
 
@@ -17,6 +18,7 @@ export default class SendPromotionEmailJob extends BaseJob<SendPromotionEmailPay
   static jobName = 'send_promotion_email'
 
   async handle(payload: SendPromotionEmailPayload) {
+    if (automationsPaused()) return
     const loginUrl = `${env.get('FRONTEND_URL') ?? 'http://localhost:3000'}/login`
     const fromAddress = env.get('MAIL_FROM_ADDRESS')
 

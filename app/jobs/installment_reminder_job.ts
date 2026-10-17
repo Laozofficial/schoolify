@@ -1,6 +1,7 @@
 import logger from '@adonisjs/core/services/logger'
 import { DateTime } from 'luxon'
 import { BaseJob } from '#jobs/base_job'
+import { automationsPaused } from '#services/pause'
 import FeeInvoice from '#models/fee_invoice'
 import InvoiceInstallment from '#models/invoice_installment'
 import db from '@adonisjs/lucid/services/db'
@@ -21,6 +22,7 @@ export default class InstallmentReminderJob extends BaseJob<Record<string, never
   static repeatKey = 'installment-reminder-daily'
 
   async handle() {
+    if (automationsPaused()) return
     const today = DateTime.now().setZone('Africa/Lagos').startOf('day')
     const soon = today.plus({ days: 3 }).toISODate()!
     const missed = today.minus({ days: 1 }).toISODate()!

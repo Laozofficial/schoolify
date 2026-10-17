@@ -1,4 +1,5 @@
 import { BaseJob, type JobPayload } from '#jobs/base_job'
+import { automationsPaused } from '#services/pause'
 import School from '#models/school'
 import Integration from '#models/integration'
 import MessageCampaign from '#models/message_campaign'
@@ -21,6 +22,7 @@ export default class SendCampaignJob extends BaseJob<SendCampaignPayload> {
   static jobName = 'send_campaign'
 
   async handle({ campaignId }: SendCampaignPayload) {
+    if (automationsPaused()) return
     const campaign = await MessageCampaign.find(campaignId)
     if (!campaign) return
     const school = await School.findOrFail(campaign.schoolId)

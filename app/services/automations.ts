@@ -1,4 +1,5 @@
 import logger from '@adonisjs/core/services/logger'
+import { automationsPaused } from '#services/pause'
 import School from '#models/school'
 import Student from '#models/student'
 import { createCampaign, type Channel } from '#services/messaging'
@@ -127,6 +128,7 @@ export async function fireAutomation(
   opts: { studentId: number; vars?: Record<string, string>; dedupeKey?: string }
 ) {
   try {
+    if (automationsPaused()) return
     const ev = AUTOMATION_EVENTS.find((e) => e.key === key)
     if (!ev) return
     const school = await School.find(schoolId)

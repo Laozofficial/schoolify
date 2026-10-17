@@ -1,5 +1,6 @@
 import logger from '@adonisjs/core/services/logger'
 import { BaseJob } from '#jobs/base_job'
+import { automationsPaused } from '#services/pause'
 import { isTwelveAiConfigured } from '#services/twelveai'
 import { sweepTopups } from '#services/ai_credits'
 import { sweepSubscriptions } from '#services/billing'
@@ -16,7 +17,7 @@ export default class BillingSweepJob extends BaseJob<Record<string, never>> {
   static repeatKey = 'billing-sweep-5min'
 
   async handle() {
-    if (!isTwelveAiConfigured()) return
+    if (automationsPaused() || !isTwelveAiConfigured()) return
     const credited = await sweepTopups()
     const synced = await sweepSubscriptions()
     if (credited || synced) logger.info({ credited, synced }, 'billing sweep')
